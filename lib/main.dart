@@ -1,4 +1,7 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() => runApp(MyApp());
 
@@ -28,24 +31,60 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  final List<Map<String, String>> _credentials = [];
+  List<Map<String, String>> _credentials = [];
 
-  void _addCredentials() {
+  @override
+  void initState() {
+    super.initState();
+    _loadCredentials(); // Load credentials when the widget is initialized
+  }
+
+  Future<void> _loadCredentials() async {
+    _credentials = await getListOfMaps();
+    setState(() {});
+  }
+
+  Future<List<Map<String, String>>> getListOfMaps() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? jsonString = prefs.getString('myListOfMapsKey');
+
+    if (jsonString != null) {
+      List<dynamic> jsonList = jsonDecode(jsonString); // Decode the JSON string
+      return jsonList
+          .map((item) => Map<String, String>.from(item))
+          .toList(); // Convert each item to Map<String, String>
+    } else {
+      return []; // Return an empty list if there is no saved data
+    }
+  }
+
+  Future<void> _addCredentials() async {
     if (_emailController.text.isEmpty || _passwordController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Please fill in both fields')),
       );
       return;
     }
+
     setState(() {
       _credentials.add({
         'email': _emailController.text,
         'password': _passwordController.text,
       });
     });
+
+    await saveListOfMaps(_credentials); // Save the updated list
+
     _emailController.clear();
     _passwordController.clear();
     Navigator.of(context).pop();
+  }
+
+  Future<void> saveListOfMaps(List<Map<String, String>> list) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String jsonString =
+        jsonEncode(list); // Convert the list of maps to a JSON string
+    await prefs.setString('myListOfMapsKey', jsonString);
   }
 
   void _showAddCredentialsDialog() {
@@ -155,10 +194,12 @@ class _HomePageState extends State<HomePage> {
               child: Text('Cancel'),
             ),
             TextButton(
-              onPressed: () {
+              onPressed: () async {
                 setState(() {
                   _credentials.removeAt(index);
                 });
+                await saveListOfMaps(
+                    _credentials); // Update the saved list after deletion
                 Navigator.of(context).pop();
               },
               child: Text('Delete'),
