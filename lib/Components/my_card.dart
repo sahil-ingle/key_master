@@ -12,7 +12,7 @@ class MyCard extends StatelessWidget {
       child: Container(
         width: MediaQuery.of(context).size.width,
         margin: EdgeInsets.symmetric(vertical: 5, horizontal: 20),
-        padding: EdgeInsets.all(30),
+        padding: EdgeInsets.all(20),
         decoration: BoxDecoration(
             borderRadius: BorderRadius.all(Radius.circular(23)),
             color: Colors.lightGreen),
