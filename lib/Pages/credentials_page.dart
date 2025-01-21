@@ -18,7 +18,10 @@ class _CredentialsPageState extends State<CredentialsPage> {
       ),
       body: Column(
         children: [
-          MyCard("ex", () {}),
+          MyCard(
+            "ex",
+            () {},
+          ),
         ],
       ),
     );

@@ -40,8 +40,11 @@ class HomePageState extends State<HomePage> {
   void saveCredential() {}
 
   void addCategory() async {
-    _categoryList.add(_categoryController.text);
-    _categoryController.clear();
+    setState(() {
+      _categoryList.add(_categoryController.text);
+      _categoryController.clear();
+    });
+
     Navigator.pop(context);
     final SharedPreferences pref = await SharedPreferences.getInstance();
     await pref.setStringList('category', _categoryList);
@@ -75,11 +78,10 @@ class HomePageState extends State<HomePage> {
             })));
   }
 
-  Future onCardTap(BuildContext context) {
+  Future onCardTap(BuildContext context, String title) {
     return Navigator.push(
       context,
-      MaterialPageRoute(
-          builder: (context) => CredentialsPage("Credentials Page Title")),
+      MaterialPageRoute(builder: (context) => CredentialsPage(title)),
     );
   }
 
@@ -133,6 +135,7 @@ class HomePageState extends State<HomePage> {
         ),
       ),
       body: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
           GestureDetector(
             onTap: addCategoryBtn,
@@ -141,11 +144,14 @@ class HomePageState extends State<HomePage> {
               style: TextStyle(fontSize: 20),
             ),
           ),
-          Column(
-            children: [
-              MyCard("ex", () => onCardTap(context)),
-              MyCard("username", () => onCardTap(context)),
-            ],
+          Expanded(
+            child: ListView.builder(
+              itemCount: _categoryList.length,
+              itemBuilder: (context, index) {
+                return MyCard(_categoryList[index],
+                    () => onCardTap(context, _categoryList[index]));
+              },
+            ),
           ),
         ],
       ),
