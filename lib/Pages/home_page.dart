@@ -23,7 +23,7 @@ class HomePageState extends State<HomePage> {
   final TextEditingController _categoryController = TextEditingController();
   Map<String, String>? _allCredential;
   late List<String> _categoryList;
-  String? selectedCategory;
+  String? _selectedCategory;
 
   @override
   void initState() {
@@ -39,7 +39,7 @@ class HomePageState extends State<HomePage> {
   }
 
   void onChanged(String? selectedValue) {
-    selectedCategory = selectedValue;
+    _selectedCategory = selectedValue!;
   }
 
   void loadData() async {
@@ -49,11 +49,13 @@ class HomePageState extends State<HomePage> {
     });
   }
 
-  void saveCredential(String uniqeName, String email, String password) async {
+  void saveCredential(
+      String uniqeName, String email, String password, String category) async {
     Map<String, String> userCredentials = {
       'userName': uniqeName,
       'email': email,
-      'password': password
+      'password': password,
+      'category': category
     };
 
     storeData(uniqeName, userCredentials);
@@ -147,7 +149,7 @@ class HomePageState extends State<HomePage> {
                         height: 20,
                       ),
                       MyDropdown(
-                        selectedCategory,
+                        _selectedCategory,
                         _categoryList,
                         (String? selectedValue) {
                           setState(() {
@@ -157,8 +159,11 @@ class HomePageState extends State<HomePage> {
                         },
                       ),
                       MyButton(
-                          () => saveCredential(_uniqeNameController.text,
-                              _emailController.text, _passwordController.text),
+                          () => saveCredential(
+                              _uniqeNameController.text,
+                              _emailController.text,
+                              _passwordController.text,
+                              _selectedCategory!),
                           "Save")
                     ],
                   ),
