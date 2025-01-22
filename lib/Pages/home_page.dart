@@ -1,4 +1,7 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:key_master/Components/my_button.dart';
 import 'package:key_master/Components/my_card.dart';
 import 'package:key_master/Components/my_dropdown.dart';
@@ -14,9 +17,11 @@ class HomePage extends StatefulWidget {
 }
 
 class HomePageState extends State<HomePage> {
+  final TextEditingController _uniqeNameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _categoryController = TextEditingController();
+  Map<String, String>? _allCredential;
   late List<String> _categoryList;
   String? selectedCategory;
 
@@ -24,6 +29,13 @@ class HomePageState extends State<HomePage> {
   void initState() {
     loadData();
     super.initState();
+  }
+
+  final storage = FlutterSecureStorage();
+
+  void storeData(String uniqeName, Map<String, String> userCredentials) async {
+    String jsonString = jsonEncode(userCredentials);
+    await storage.write(key: uniqeName, value: jsonString);
   }
 
   void onChanged(String? selectedValue) {
@@ -37,7 +49,33 @@ class HomePageState extends State<HomePage> {
     });
   }
 
-  void saveCredential() {}
+  void saveCredential(String uniqeName, String email, String password) async {
+    Map<String, String> userCredentials = {
+      'userName': uniqeName,
+      'email': email,
+      'password': password
+    };
+
+    storeData(uniqeName, userCredentials);
+    _uniqeNameController.clear();
+    _emailController.clear();
+    _passwordController.clear();
+    Navigator.pop(context);
+  }
+
+  void retriveCredential() async {
+    String? storedData = await storage.read(key: 'sahil333');
+
+    if (storedData != null) {
+      // Decode the JSON string back into a Map
+      _allCredential = Map<String, String>.from(jsonDecode(storedData));
+    }
+    print(_allCredential);
+  }
+
+  void deleteAllData() async {
+    await storage.deleteAll();
+  }
 
   void addCategory() async {
     setState(() {
@@ -102,6 +140,7 @@ class HomePageState extends State<HomePage> {
                       SizedBox(
                         height: 20,
                       ),
+                      MyTextfield(_uniqeNameController, false, "Uniqe Name"),
                       MyTextfield(_emailController, false, 'Email'),
                       MyTextfield(_passwordController, true, 'Password'),
                       SizedBox(
@@ -117,7 +156,10 @@ class HomePageState extends State<HomePage> {
                           });
                         },
                       ),
-                      MyButton(saveCredential, "Save")
+                      MyButton(
+                          () => saveCredential(_uniqeNameController.text,
+                              _emailController.text, _passwordController.text),
+                          "Save")
                     ],
                   ),
                 );
@@ -144,6 +186,8 @@ class HomePageState extends State<HomePage> {
               style: TextStyle(fontSize: 20),
             ),
           ),
+          MyButton(retriveCredential, "retive data"),
+          MyButton(deleteAllData, "delete data"),
           Expanded(
             child: ListView.builder(
               itemCount: _categoryList.length,
