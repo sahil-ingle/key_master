@@ -21,7 +21,6 @@ class HomePageState extends State<HomePage> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _categoryController = TextEditingController();
-  Map<String, String>? _allCredential;
   late List<String> _categoryList;
   String? _selectedCategory;
 
@@ -63,16 +62,6 @@ class HomePageState extends State<HomePage> {
     _emailController.clear();
     _passwordController.clear();
     Navigator.pop(context);
-  }
-
-  void retriveCredential() async {
-    String? storedData = await storage.read(key: 'sahil333');
-
-    if (storedData != null) {
-      // Decode the JSON string back into a Map
-      _allCredential = Map<String, String>.from(jsonDecode(storedData));
-    }
-    print(_allCredential);
   }
 
   void deleteAllData() async {
@@ -123,6 +112,31 @@ class HomePageState extends State<HomePage> {
       context,
       MaterialPageRoute(builder: (context) => CredentialsPage(title)),
     );
+  }
+
+  void onDeleteIconTap(context, String categoryName, int index) async {
+    try {
+      Map<String, String> allData = await storage.readAll();
+
+      for (String key in allData.keys) {
+        String? jsonString = allData[key];
+        if (jsonString != null) {
+          Map<String, dynamic> credentials = jsonDecode(jsonString);
+          if (credentials['category'] == categoryName) {
+            setState(() {
+              storage.delete(key: key);
+            });
+          }
+        }
+      }
+
+      setState(() {
+        _categoryList.removeAt(index);
+      });
+    } catch (e) {
+      // Handle errors (e.g., log or show a message)
+      print('Error loading usernames: $e');
+    }
   }
 
   void showDialogBox() {
@@ -191,15 +205,32 @@ class HomePageState extends State<HomePage> {
               style: TextStyle(fontSize: 20),
             ),
           ),
-          MyButton(retriveCredential, "retive data"),
           MyButton(deleteAllData, "delete data"),
           Expanded(
-            child: ListView.builder(
-              itemCount: _categoryList.length,
-              itemBuilder: (context, index) {
-                return MyCard(_categoryList[index],
-                    () => onCardTap(context, _categoryList[index]));
+            child: ReorderableListView(
+              onReorder: (oldIndex, newIndex) {
+                setState(() {
+                  if (newIndex > oldIndex)
+                    newIndex--; // Adjust for list shifting
+                  final item = _categoryList.removeAt(oldIndex);
+                  _categoryList.insert(newIndex, item);
+                });
               },
+              children: [
+                for (int index = 0; index < _categoryList.length; index++)
+                  MyCard(
+                    key: ValueKey(
+                        _categoryList[index]), // Required for reorderable list
+                    username: _categoryList[index],
+                    onTap: () => onCardTap(context, _categoryList[index]),
+                    onIconTap: () =>
+                        onDeleteIconTap(context, _categoryList[index], index),
+                    dragHandle: ReorderableDragStartListener(
+                      index: index,
+                      child: Icon(Icons.drag_handle, color: Colors.white),
+                    ),
+                  ),
+              ],
             ),
           ),
         ],

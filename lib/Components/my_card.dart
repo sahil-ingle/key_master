@@ -3,7 +3,14 @@ import 'package:flutter/material.dart';
 class MyCard extends StatelessWidget {
   final String username;
   final Function()? onTap;
-  const MyCard(this.username, this.onTap, {super.key});
+  final Function()? onIconTap;
+  final Widget? dragHandle;
+  const MyCard(
+      {required this.username,
+      required this.onTap,
+      required this.onIconTap,
+      this.dragHandle,
+      super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -16,9 +23,29 @@ class MyCard extends StatelessWidget {
         decoration: BoxDecoration(
             borderRadius: BorderRadius.all(Radius.circular(23)),
             color: Colors.lightGreen),
-        child: Text(
-          username,
-          style: TextStyle(fontSize: 20),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              username,
+              style: TextStyle(fontSize: 20),
+            ),
+            Container(
+                child: Row(
+              children: [
+                GestureDetector(
+                    onTap: onIconTap,
+                    child: Icon(
+                      Icons.delete,
+                      color: Colors.white,
+                    )),
+                SizedBox(
+                  width: 10,
+                ),
+                if (dragHandle != null) dragHandle!,
+              ],
+            )),
+          ],
         ),
       ),
     );

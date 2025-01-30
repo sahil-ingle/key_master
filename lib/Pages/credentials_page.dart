@@ -15,6 +15,7 @@ class CredentialsPage extends StatefulWidget {
 class _CredentialsPageState extends State<CredentialsPage> {
   final storage = FlutterSecureStorage();
   List<String> _usernames = [];
+  Map<String, String>? _allCredential;
 
   @override
   void initState() {
@@ -22,7 +23,55 @@ class _CredentialsPageState extends State<CredentialsPage> {
     super.initState();
   }
 
-  void onTap() {}
+  void onTap(context, String userName) async {
+    try {
+      String? email;
+      String? password;
+
+      String? storedData = await storage.read(key: userName);
+      if (storedData != null) {
+        // Decode the JSON string back into a Map
+        _allCredential = Map<String, String>.from(jsonDecode(storedData));
+        email = _allCredential?['email'];
+        password = _allCredential?['password'];
+      }
+
+      showDialogBox(userName, email, password);
+    } catch (e) {
+      // Handle errors (e.g., log or show a message)
+      print('Error loading usernames: $e');
+    }
+  }
+
+  void showDialogBox(String userName, String? email, String? password) {
+    showDialog(
+        context: context,
+        builder: (BuildContext context) => Dialog(
+              child: StatefulBuilder(builder: (BuildContext context, setState) {
+                return Container(
+                  padding: EdgeInsets.symmetric(horizontal: 20, vertical: 30),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        "Your Credentials",
+                        style: TextStyle(fontSize: 20),
+                      ),
+                      SizedBox(
+                        height: 20,
+                      ),
+                      Text(userName),
+                      SizedBox(
+                        height: 20,
+                      ),
+                      Text(email!),
+                      Text(password!),
+                    ],
+                  ),
+                );
+              }),
+            ));
+  }
 
   void getUserNameList(String categoryName) async {
     try {
@@ -58,7 +107,11 @@ class _CredentialsPageState extends State<CredentialsPage> {
       body: ListView.builder(
         itemCount: _usernames.length,
         itemBuilder: (context, index) {
-          return MyCard(_usernames[index], onTap);
+          return MyCard(
+            username: _usernames[index],
+            onTap: () => onTap(context, _usernames[index]),
+            onIconTap: () {},
+          );
         },
       ),
     );
