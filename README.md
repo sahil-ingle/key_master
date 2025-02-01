@@ -17,8 +17,3 @@ A secure, offline password manager built with Flutter that helps you store and m
 - 🔑 **AES-256 Encryption**: Industry-standard encryption for your data
 - 🌙 **Dark/Light Theme**: Automatic theme switching based on system settings
 
-## Installation ⬇️
-
-1. Clone the repository:
-```bash
-git clone https://github.com/yourusername/key-master.git
