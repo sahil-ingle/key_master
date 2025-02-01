@@ -6,7 +6,7 @@ A secure, offline password manager built with Flutter that helps you store and m
 
 **⚠️ Note: Project is currently in active development**
 
-[![Latest Release](https://img.shields.io/badge/release-v0.1.0-green)](https://github.com/yourusername/key-master/pre-releases/latest)
+[![Latest Release](https://img.shields.io/badge/release-v0.1.0-green)](https://github.com/sahil-ingle/key_master/releases/tag/Pre-release)
 
 ## Features ✨
 
