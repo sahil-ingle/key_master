@@ -18,10 +18,12 @@ class _SettingsPageState extends State<SettingsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: MyAppBar(title: "settings"),
+      appBar: MyAppBar(title: "Work in progress"),
       body: Column(
         children: [
-          GestureDetector(onTap: addCategoryBtn, child: Text("click me"))
+          GestureDetector(
+              onTap: addCategoryBtn,
+              child: Text("click me, might break the app"))
         ],
       ),
     );

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:key_master/Pages/home_page.dart';
+import 'package:key_master/Pages/lock_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -11,6 +12,12 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(debugShowCheckedModeBanner: false, home: HomePage());
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      home: const LockScreen(),
+      routes: {
+        '/home': (context) => const HomePage(),
+      },
+    );
   }
 }

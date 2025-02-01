@@ -330,89 +330,94 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
 // Update the build method
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: MyAppBar(
-        title: "Key Master",
-        myIcon: const Icon(Icons.settings, color: Colors.black87),
-        onTap: () => Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => const SettingsPage()),
-        ),
-      ),
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                TextButton.icon(
-                  icon: const Icon(Icons.add_box_outlined),
-                  label: const Text("Add Category"),
-                  onPressed: addCategoryBtn,
-                ),
-                MyButton(
-                  onBtnPress: deleteAllData,
-                  text: 'Clear All',
-                  icon: Icons.delete_forever,
-                  color: Colors.red.shade100,
-                  textColor: Colors.red.shade800,
-                ),
-              ],
+    return WillPopScope(
+        onWillPop: () async => false,
+        child: Scaffold(
+          appBar: MyAppBar(
+            title: "Key Master",
+            myIcon: const Icon(Icons.settings, color: Colors.black87),
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const SettingsPage()),
             ),
           ),
-          Expanded(
-            child: _categoryList.isEmpty
-                ? Center(
-                    child: Text(
-                      'No categories found. Add a new category!',
-                      style: TextStyle(color: Colors.grey.shade600),
+          body: Column(
+            children: [
+              Padding(
+                padding:
+                    const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    TextButton.icon(
+                      icon: const Icon(Icons.add_box_outlined),
+                      label: const Text("Add Category"),
+                      onPressed: addCategoryBtn,
                     ),
-                  )
-                : ReorderableListView(
-                    onReorder: (oldIndex, newIndex) {
-                      if (newIndex > oldIndex) newIndex--;
-                      setState(() {
-                        final item = _categoryList.removeAt(oldIndex);
-                        _categoryList.insert(newIndex, item);
-                      });
-                    },
-                    children: [
-                      for (int index = 0; index < _categoryList.length; index++)
-                        MyCard(
-                          key: ValueKey(_categoryList[index]),
-                          username: _categoryList[index],
-                          onTap: () => Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) =>
-                                  CredentialsPage(_categoryList[index]),
-                            ),
-                          ),
-                          onIconTap: () => onDeleteIconTap(
-                              context, _categoryList[index], index),
-                          dragHandle: ReorderableDragStartListener(
-                            index: index,
-                            child: const Icon(Icons.drag_handle,
-                                color: Colors.white),
-                          ),
+                    MyButton(
+                      onBtnPress: deleteAllData,
+                      text: 'Clear All',
+                      icon: Icons.delete_forever,
+                      color: Colors.red.shade100,
+                      textColor: Colors.red.shade800,
+                    ),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: _categoryList.isEmpty
+                    ? Center(
+                        child: Text(
+                          'No categories found. Add a new category!',
+                          style: TextStyle(color: Colors.grey.shade600),
                         ),
-                    ],
-                  ),
+                      )
+                    : ReorderableListView(
+                        onReorder: (oldIndex, newIndex) {
+                          if (newIndex > oldIndex) newIndex--;
+                          setState(() {
+                            final item = _categoryList.removeAt(oldIndex);
+                            _categoryList.insert(newIndex, item);
+                          });
+                        },
+                        children: [
+                          for (int index = 0;
+                              index < _categoryList.length;
+                              index++)
+                            MyCard(
+                              key: ValueKey(_categoryList[index]),
+                              username: _categoryList[index],
+                              onTap: () => Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      CredentialsPage(_categoryList[index]),
+                                ),
+                              ),
+                              onIconTap: () => onDeleteIconTap(
+                                  context, _categoryList[index], index),
+                              dragHandle: ReorderableDragStartListener(
+                                index: index,
+                                child: const Icon(Icons.drag_handle,
+                                    color: Colors.white),
+                              ),
+                            ),
+                        ],
+                      ),
+              ),
+            ],
           ),
-        ],
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: showDialogBox,
-        backgroundColor: const Color(0xFF90CAF9),
-        foregroundColor: Colors.grey.shade800,
-        elevation: 2,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-          side: const BorderSide(color: Color(0xFF90CAF9), width: 1.5),
-        ),
-        child: const Icon(Icons.add_rounded, size: 28),
-      ),
-    );
+          floatingActionButton: FloatingActionButton(
+            onPressed: showDialogBox,
+            backgroundColor: const Color(0xFF90CAF9),
+            foregroundColor: Colors.grey.shade800,
+            elevation: 2,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+              side: const BorderSide(color: Color(0xFF90CAF9), width: 1.5),
+            ),
+            child: const Icon(Icons.add_rounded, size: 28),
+          ),
+        ));
   }
 }

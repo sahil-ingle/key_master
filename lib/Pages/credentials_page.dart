@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:key_master/Components/credential_card.dart';
 import 'package:key_master/Components/my_app_bar.dart';
-//import 'package:key_master/Components/my_card.dart';
+import 'package:local_auth/local_auth.dart';
 
 class CredentialsPage extends StatefulWidget {
   final String title;
@@ -19,31 +19,63 @@ class _CredentialsPageState extends State<CredentialsPage> {
   // ignore: unused_field
   List<String> _usernames = [];
   Map<String, String>? _allCredential;
+  final LocalAuthentication _localAuth = LocalAuthentication();
+  bool _isAuthenticating = false;
 
   @override
   void initState() {
-    getUserNameList(widget.title);
     super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      getUserNameList(widget.title);
+    });
   }
 
   void onTap(context, String userName) async {
     try {
-      String? email;
-      String? password;
-
-      String? storedData = await storage.read(key: userName);
-      if (storedData != null) {
-        // Decode the JSON string back into a Map
-        _allCredential = Map<String, String>.from(jsonDecode(storedData));
-        email = _allCredential?['email'];
-        password = _allCredential?['password'];
+      // Check if biometric authentication is available
+      final bool canAuthenticate = await _localAuth.canCheckBiometrics;
+      if (!canAuthenticate) {
+        _showCredentialsDirectly(userName);
+        return;
       }
 
-      showDialogBox(userName, email, password);
+      // Perform authentication
+      final bool authenticated = await _localAuth.authenticate(
+        localizedReason: 'Authenticate to view credentials',
+        options: const AuthenticationOptions(
+          biometricOnly: true,
+          useErrorDialogs: true,
+          stickyAuth: true,
+        ),
+      );
+
+      if (authenticated) {
+        _showCredentialsDirectly(userName);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Authentication failed')),
+        );
+      }
     } catch (e) {
-      // Handle errors (e.g., log or show a message)
-      print('Error loading usernames: $e');
+      print('Authentication error: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: ${e.toString()}')),
+      );
     }
+  }
+
+  void _showCredentialsDirectly(String userName) async {
+    String? email;
+    String? password;
+
+    String? storedData = await storage.read(key: userName);
+    if (storedData != null) {
+      _allCredential = Map<String, String>.from(jsonDecode(storedData));
+      email = _allCredential?['email'];
+      password = _allCredential?['password'];
+    }
+
+    showDialogBox(userName, email, password);
   }
 
   void showDialogBox(String userName, String? email, String? password) {
@@ -170,16 +202,22 @@ class _CredentialsPageState extends State<CredentialsPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: MyAppBar(title: widget.title),
-      body: ListView.builder(
-        itemCount: _usernames.length,
-        itemBuilder: (context, index) {
-          return CredentialCard(
-            username: _usernames[index],
-            onTap: () => onTap(context, _usernames[index]),
-            onIconTap: () {},
-          );
-        },
-      ),
+      body: _isAuthenticating
+          ? const Center(child: CircularProgressIndicator())
+          : ListView.builder(
+              itemCount: _usernames.length,
+              itemBuilder: (context, index) {
+                return CredentialCard(
+                  username: _usernames[index],
+                  onTap: () {
+                    setState(() => _isAuthenticating = true);
+                    onTap(context, _usernames[index]);
+                    setState(() => _isAuthenticating = false);
+                  },
+                  onIconTap: () {},
+                );
+              },
+            ),
     );
   }
 }
