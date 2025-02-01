@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:key_master/Components/my_app_bar.dart';
 import 'package:key_master/Components/my_button.dart';
 import 'package:key_master/Components/my_card.dart';
 import 'package:key_master/Components/my_dropdown.dart';
@@ -100,7 +101,11 @@ class HomePageState extends State<HomePage> {
                     SizedBox(
                       height: 20,
                     ),
-                    MyButton(addCategory, "Save")
+                    MyButton(
+                      onBtnPress: addCategory,
+                      text: 'Save',
+                      icon: Icons.save_rounded,
+                    )
                   ],
                 ),
               );
@@ -141,58 +146,143 @@ class HomePageState extends State<HomePage> {
 
   void showDialogBox() {
     showDialog(
-        context: context,
-        builder: (BuildContext context) => Dialog(
-              child: StatefulBuilder(builder: (BuildContext context, setState) {
-                return Container(
-                  padding: EdgeInsets.symmetric(horizontal: 20, vertical: 30),
-                  child: Column(
+      context: context,
+      builder: (BuildContext context) => Theme(
+        data: Theme.of(context).copyWith(
+          dialogTheme: DialogTheme(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+          ),
+        ),
+        child: Dialog(
+          child: SingleChildScrollView(
+            // Prevent overflow
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 30),
+            child: Container(
+              constraints: const BoxConstraints(minWidth: 300), // Minimum width
+              child: StatefulBuilder(
+                builder: (BuildContext context, setState) {
+                  return Column(
                     mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       Text(
                         "Enter Credentials",
-                        style: TextStyle(fontSize: 20),
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.grey.shade800,
+                        ),
                       ),
-                      SizedBox(
-                        height: 20,
+                      const SizedBox(height: 24),
+                      _buildTextFieldSection(),
+                      const SizedBox(
+                        height: 5,
                       ),
-                      MyTextfield(_uniqeNameController, false, "Uniqe Name"),
-                      MyTextfield(_emailController, false, 'Email'),
-                      MyTextfield(_passwordController, true, 'Password'),
-                      SizedBox(
-                        height: 20,
-                      ),
-                      MyDropdown(
-                        _selectedCategory,
-                        _categoryList,
-                        (String? selectedValue) {
-                          setState(() {
-                            onChanged(
-                                selectedValue); // Update selected value and trigger rebuild
-                          });
-                        },
-                      ),
-                      MyButton(
-                          () => saveCredential(
-                              _uniqeNameController.text,
-                              _emailController.text,
-                              _passwordController.text,
-                              _selectedCategory!),
-                          "Save")
+                      _buildDropdownSection(setState),
+                      const SizedBox(height: 24),
+                      _buildActionButtons(),
                     ],
-                  ),
-                );
-              }),
-            ));
+                  );
+                },
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTextFieldSection() {
+    return Column(
+      children: [
+        MyTextfield(
+          _uniqeNameController,
+          false,
+          "Unique Name",
+          icon: Icons.person_outline,
+        ),
+        const SizedBox(height: 2),
+        MyTextfield(
+          _emailController,
+          false,
+          'Email',
+          icon: Icons.email_outlined,
+        ),
+        const SizedBox(height: 2),
+        MyTextfield(
+          _passwordController,
+          true,
+          'Password',
+          icon: Icons.lock_outline,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDropdownSection(StateSetter setState) {
+    return SizedBox(
+      height: 95,
+      child: MyDropdown(
+        selectedValue: _selectedCategory,
+        items: _categoryList,
+        onChanged: (String? selectedValue) {
+          setState(() {
+            _selectedCategory = selectedValue;
+          });
+        },
+        hint: 'Select Category',
+      ),
+    );
+  }
+
+  Widget _buildActionButtons() {
+    return Container(
+      margin: EdgeInsets.symmetric(horizontal: 20),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          MyButton(
+            onBtnPress: () => saveCredential(
+              _uniqeNameController.text,
+              _emailController.text,
+              _passwordController.text,
+              _selectedCategory!,
+            ),
+            text: 'Save',
+            color: Colors.blue.shade100,
+            textColor: Colors.blue.shade800,
+            icon: Icons.save_rounded,
+          ),
+          TextButton(
+            onPressed: () {
+              _uniqeNameController.clear();
+              _emailController.clear();
+              _passwordController.clear();
+              Navigator.pop(context);
+            },
+            child: Text(
+              "Cancel",
+              style: TextStyle(
+                color: Colors.grey.shade600,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          "Key Master",
-          textAlign: TextAlign.center,
+      appBar: MyAppBar(
+        title: "Key Master",
+        myIcon: const Icon(
+          Icons.settings,
+          color: Colors.black87,
         ),
       ),
       body: Column(
@@ -205,13 +295,18 @@ class HomePageState extends State<HomePage> {
               style: TextStyle(fontSize: 20),
             ),
           ),
-          MyButton(deleteAllData, "delete data"),
+          MyButton(
+            onBtnPress: deleteAllData,
+            text: 'delete data',
+            icon: Icons.delete_rounded,
+          ),
           Expanded(
             child: ReorderableListView(
               onReorder: (oldIndex, newIndex) {
                 setState(() {
-                  if (newIndex > oldIndex)
+                  if (newIndex > oldIndex) {
                     newIndex--; // Adjust for list shifting
+                  }
                   final item = _categoryList.removeAt(oldIndex);
                   _categoryList.insert(newIndex, item);
                 });
@@ -236,7 +331,22 @@ class HomePageState extends State<HomePage> {
         ],
       ),
       floatingActionButton: FloatingActionButton(
-          onPressed: showDialogBox, child: Icon(Icons.add)),
+        onPressed: showDialogBox,
+        backgroundColor: Color(0xFF90CAF9),
+        foregroundColor: Colors.grey.shade800,
+        elevation: 2,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+          side: BorderSide(
+            color: Color(0xFF90CAF9),
+            width: 1.5,
+          ),
+        ),
+        child: Icon(
+          Icons.add_rounded,
+          size: 28,
+        ),
+      ),
     );
   }
 }

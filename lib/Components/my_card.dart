@@ -5,47 +5,87 @@ class MyCard extends StatelessWidget {
   final Function()? onTap;
   final Function()? onIconTap;
   final Widget? dragHandle;
-  const MyCard(
-      {required this.username,
-      required this.onTap,
-      required this.onIconTap,
-      this.dragHandle,
-      super.key});
+  const MyCard({
+    required this.username,
+    required this.onTap,
+    required this.onIconTap,
+    this.dragHandle,
+    super.key,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: MediaQuery.of(context).size.width,
-        margin: EdgeInsets.symmetric(vertical: 5, horizontal: 20),
-        padding: EdgeInsets.all(20),
-        decoration: BoxDecoration(
-            borderRadius: BorderRadius.all(Radius.circular(23)),
-            color: Colors.lightGreen),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              username,
-              style: TextStyle(fontSize: 20),
-            ),
-            Container(
-                child: Row(
+    return Container(
+      width: MediaQuery.of(context).size.width,
+      margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 16),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
+        border: Border.all(color: Colors.grey.withOpacity(0.1)),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                GestureDetector(
-                    onTap: onIconTap,
-                    child: Icon(
-                      Icons.delete,
-                      color: Colors.white,
-                    )),
-                SizedBox(
-                  width: 10,
+                Expanded(
+                  child: Text(
+                    username,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.grey.shade800,
+                      letterSpacing: -0.2,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
-                if (dragHandle != null) dragHandle!,
+                Row(
+                  children: [
+                    IconButton(
+                      icon: Icon(
+                        Icons.delete_outline,
+                        color: Colors.grey.shade500,
+                        size: 20,
+                      ),
+                      onPressed: onIconTap,
+                      splashRadius: 20,
+                      visualDensity:
+                          const VisualDensity(horizontal: -4, vertical: -4),
+                    ),
+                    const SizedBox(width: 8),
+                    if (dragHandle != null)
+                      Padding(
+                        padding: const EdgeInsets.only(left: 4),
+                        child: IconButton(
+                          icon: Icon(
+                            Icons.drag_handle,
+                            color: Colors.grey.shade400,
+                            size: 20,
+                          ),
+                          onPressed: null, // Disabled by default
+                          splashRadius: 20,
+                          visualDensity:
+                              const VisualDensity(horizontal: -4, vertical: -4),
+                        ),
+                      ),
+                  ],
+                ),
               ],
-            )),
-          ],
+            ),
+          ),
         ),
       ),
     );

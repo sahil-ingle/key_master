@@ -2,7 +2,9 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:key_master/Components/my_card.dart';
+import 'package:key_master/Components/credential_card.dart';
+import 'package:key_master/Components/my_app_bar.dart';
+//import 'package:key_master/Components/my_card.dart';
 
 class CredentialsPage extends StatefulWidget {
   final String title;
@@ -14,6 +16,7 @@ class CredentialsPage extends StatefulWidget {
 
 class _CredentialsPageState extends State<CredentialsPage> {
   final storage = FlutterSecureStorage();
+  // ignore: unused_field
   List<String> _usernames = [];
   Map<String, String>? _allCredential;
 
@@ -101,13 +104,11 @@ class _CredentialsPageState extends State<CredentialsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.title),
-      ),
+      appBar: MyAppBar(title: widget.title),
       body: ListView.builder(
         itemCount: _usernames.length,
         itemBuilder: (context, index) {
-          return MyCard(
+          return CredentialCard(
             username: _usernames[index],
             onTap: () => onTap(context, _usernames[index]),
             onIconTap: () {},
