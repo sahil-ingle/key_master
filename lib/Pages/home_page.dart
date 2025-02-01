@@ -8,6 +8,7 @@ import 'package:key_master/Components/my_card.dart';
 import 'package:key_master/Components/my_dropdown.dart';
 import 'package:key_master/Components/my_textfield.dart';
 import 'package:key_master/Pages/credentials_page.dart';
+import 'package:key_master/Pages/settings_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class HomePage extends StatefulWidget {
@@ -284,6 +285,12 @@ class HomePageState extends State<HomePage> {
           Icons.settings,
           color: Colors.black87,
         ),
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => SettingsPage()),
+          );
+        },
       ),
       body: Column(
         mainAxisSize: MainAxisSize.min,
