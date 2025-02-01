@@ -1,16 +1,24 @@
-# key_master
+# Key Master 🔐
 
-A new Flutter project.
+![Version](https://img.shields.io/badge/version-0.1.0-blue) ![Flutter](https://img.shields.io/badge/Flutter-%2302569B.svg?style=flat&logo=Flutter&logoColor=white) ![Dart](https://img.shields.io/badge/Dart-0175C2?style=flat&logo=dart&logoColor=white)
 
-## Getting Started
+A secure, offline password manager built with Flutter that helps you store and manage your email-password combinations securely using military-grade encryption. Your data never leaves your device!
 
-This project is a starting point for a Flutter application.
+**⚠️ Note: Project is currently in active development**
 
-A few resources to get you started if this is your first Flutter project:
+[![Latest Release](https://img.shields.io/badge/release-v0.1.0-green)](https://github.com/yourusername/key-master/releases/latest)
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+## Features ✨
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+- 🔒 **Secure Storage**: Uses Flutter Secure Storage for encrypted local storage
+- 📱 **Biometric Authentication**: Fingerprint lock for enhanced security
+- 🚫 **100% Offline**: No internet connection required, no cloud storage
+- 📦 **Easy Credential Management**: Add, edit, and delete entries with ease
+- 🔑 **AES-256 Encryption**: Industry-standard encryption for your data
+- 🌙 **Dark/Light Theme**: Automatic theme switching based on system settings
+
+## Installation ⬇️
+
+1. Clone the repository:
+```bash
+git clone https://github.com/yourusername/key-master.git
