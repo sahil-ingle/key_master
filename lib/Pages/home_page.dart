@@ -15,133 +15,179 @@ class HomePage extends StatefulWidget {
   const HomePage({super.key});
 
   @override
-  State<HomePage> createState() => HomePageState();
+  State<HomePage> createState() => _HomePageState();
 }
 
-class HomePageState extends State<HomePage> {
-  final TextEditingController _uniqeNameController = TextEditingController();
+class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
+  final TextEditingController _uniqueNameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _categoryController = TextEditingController();
-  late List<String> _categoryList;
+  List<String> _categoryList = [];
   String? _selectedCategory;
+
+  final FlutterSecureStorage storage = const FlutterSecureStorage();
 
   @override
   void initState() {
-    loadData();
     super.initState();
+    loadData();
   }
 
-  final storage = FlutterSecureStorage();
-
-  void storeData(String uniqeName, Map<String, String> userCredentials) async {
-    String jsonString = jsonEncode(userCredentials);
-    await storage.write(key: uniqeName, value: jsonString);
+  @override
+  void dispose() {
+    _uniqueNameController.dispose();
+    _emailController.dispose();
+    _passwordController.dispose();
+    _categoryController.dispose();
+    super.dispose();
   }
 
-  void onChanged(String? selectedValue) {
-    _selectedCategory = selectedValue!;
+  Future<void> loadData() async {
+    try {
+      final SharedPreferences pref = await SharedPreferences.getInstance();
+      setState(() {
+        _categoryList = pref.getStringList('category') ?? ["Personal", "Work"];
+      });
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error loading categories: $e')),
+      );
+    }
   }
 
-  void loadData() async {
-    final SharedPreferences pref = await SharedPreferences.getInstance();
-    setState(() {
-      _categoryList = pref.getStringList('category') ?? ["Personal", "Work"];
-    });
-  }
+  Future<void> saveCredential(
+    String uniqueName,
+    String email,
+    String password,
+    String category,
+  ) async {
+    if (_selectedCategory == null || _selectedCategory!.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select a category')),
+      );
+      return;
+    }
 
-  void saveCredential(
-      String uniqeName, String email, String password, String category) async {
-    Map<String, String> userCredentials = {
-      'userName': uniqeName,
+    final String? existingEntry = await storage.read(key: uniqueName);
+    if (existingEntry != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('This unique name already exists')),
+      );
+      return;
+    }
+
+    final Map<String, String> userCredentials = {
+      'userName': uniqueName,
       'email': email,
       'password': password,
-      'category': category
+      'category': category,
     };
 
-    storeData(uniqeName, userCredentials);
-    _uniqeNameController.clear();
+    await storage.write(key: uniqueName, value: jsonEncode(userCredentials));
+    _uniqueNameController.clear();
     _emailController.clear();
     _passwordController.clear();
-    Navigator.pop(context);
-  }
-
-  void deleteAllData() async {
-    await storage.deleteAll();
+    if (mounted) Navigator.pop(context);
   }
 
   void addCategory() async {
+    if (_categoryController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Category name cannot be empty')),
+      );
+      return;
+    }
+
     setState(() {
       _categoryList.add(_categoryController.text);
+      _selectedCategory = _categoryController.text;
       _categoryController.clear();
     });
 
-    Navigator.pop(context);
     final SharedPreferences pref = await SharedPreferences.getInstance();
     await pref.setStringList('category', _categoryList);
+    if (mounted) Navigator.pop(context);
   }
 
   void addCategoryBtn() {
     showDialog(
-        context: context,
-        builder: (BuildContext context) => Dialog(child:
-                StatefulBuilder(builder: (BuildContext context, setState) {
-              return Container(
-                padding: EdgeInsets.symmetric(horizontal: 20, vertical: 30),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      "Enter Category",
-                      style: TextStyle(fontSize: 20),
-                    ),
-                    SizedBox(
-                      height: 20,
-                    ),
-                    MyTextfield(_categoryController, false, 'Enter Category'),
-                    SizedBox(
-                      height: 20,
-                    ),
-                    MyButton(
-                      onBtnPress: addCategory,
-                      text: 'Save',
-                      icon: Icons.save_rounded,
-                    )
-                  ],
+      context: context,
+      builder: (BuildContext context) => Dialog(
+        child: StatefulBuilder(
+          builder: (context, setState) => Container(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 30),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text("Enter Category", style: TextStyle(fontSize: 20)),
+                const SizedBox(height: 20),
+                MyTextfield(_categoryController, false, 'Enter Category'),
+                const SizedBox(height: 20),
+                MyButton(
+                  onBtnPress: addCategory,
+                  text: 'Save',
+                  icon: Icons.save_rounded,
                 ),
-              );
-            })));
-  }
-
-  Future onCardTap(BuildContext context, String title) {
-    return Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => CredentialsPage(title)),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 
-  void onDeleteIconTap(context, String categoryName, int index) async {
+  Future<void> onDeleteIconTap(
+      BuildContext context, String categoryName, int index) async {
+    bool confirm = await showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Confirm Delete'),
+        content: Text('Delete all credentials in "$categoryName" category?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
     try {
-      Map<String, String> allData = await storage.readAll();
+      final Map<String, String> allData = await storage.readAll();
+      final List<String> keysToDelete = [];
 
       for (String key in allData.keys) {
-        String? jsonString = allData[key];
+        final String? jsonString = allData[key];
         if (jsonString != null) {
-          Map<String, dynamic> credentials = jsonDecode(jsonString);
+          final Map<String, dynamic> credentials = jsonDecode(jsonString);
           if (credentials['category'] == categoryName) {
-            setState(() {
-              storage.delete(key: key);
-            });
+            keysToDelete.add(key);
           }
         }
       }
 
-      setState(() {
-        _categoryList.removeAt(index);
-      });
+      for (String key in keysToDelete) {
+        await storage.delete(key: key);
+      }
+
+      if (mounted) {
+        setState(() => _categoryList.removeAt(index));
+        final SharedPreferences pref = await SharedPreferences.getInstance();
+        await pref.setStringList('category', _categoryList);
+      }
     } catch (e) {
-      // Handle errors (e.g., log or show a message)
-      print('Error loading usernames: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error deleting category: $e')),
+        );
+      }
     }
   }
 
@@ -158,35 +204,91 @@ class HomePageState extends State<HomePage> {
         ),
         child: Dialog(
           child: SingleChildScrollView(
-            // Prevent overflow
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 30),
             child: Container(
-              constraints: const BoxConstraints(minWidth: 300), // Minimum width
+              constraints: const BoxConstraints(minWidth: 300),
               child: StatefulBuilder(
-                builder: (BuildContext context, setState) {
-                  return Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      Text(
-                        "Enter Credentials",
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.grey.shade800,
-                        ),
+                builder: (context, setState) => Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      "Enter Credentials",
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.grey.shade800,
                       ),
-                      const SizedBox(height: 24),
-                      _buildTextFieldSection(),
-                      const SizedBox(
-                        height: 5,
+                    ),
+                    const SizedBox(height: 24),
+                    MyTextfield(
+                      _uniqueNameController,
+                      false,
+                      "Unique Name",
+                      icon: Icons.person_outline,
+                    ),
+                    const SizedBox(height: 2),
+                    MyTextfield(
+                      _emailController,
+                      false,
+                      'Email',
+                      icon: Icons.email_outlined,
+                    ),
+                    const SizedBox(height: 2),
+                    MyTextfield(
+                      _passwordController,
+                      true,
+                      'Password',
+                      icon: Icons.lock_outline,
+                    ),
+                    const SizedBox(height: 5),
+                    SizedBox(
+                      height: 95,
+                      child: MyDropdown(
+                        selectedValue: _selectedCategory,
+                        items: _categoryList,
+                        onChanged: (String? value) =>
+                            setState(() => _selectedCategory = value),
+                        hint: 'Select Category',
                       ),
-                      _buildDropdownSection(setState),
-                      const SizedBox(height: 24),
-                      _buildActionButtons(),
-                    ],
-                  );
-                },
+                    ),
+                    const SizedBox(height: 24),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          TextButton(
+                            onPressed: () {
+                              _uniqueNameController.clear();
+                              _emailController.clear();
+                              _passwordController.clear();
+                              Navigator.pop(context);
+                            },
+                            child: Text(
+                              "Cancel",
+                              style: TextStyle(
+                                color: Colors.grey.shade600,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                          MyButton(
+                            onBtnPress: () => saveCredential(
+                              _uniqueNameController.text,
+                              _emailController.text,
+                              _passwordController.text,
+                              _selectedCategory!,
+                            ),
+                            text: 'Save',
+                            color: Colors.blue.shade100,
+                            textColor: Colors.blue.shade800,
+                            icon: Icons.save_rounded,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -195,164 +297,121 @@ class HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _buildTextFieldSection() {
-    return Column(
-      children: [
-        MyTextfield(
-          _uniqeNameController,
-          false,
-          "Unique Name",
-          icon: Icons.person_outline,
-        ),
-        const SizedBox(height: 2),
-        MyTextfield(
-          _emailController,
-          false,
-          'Email',
-          icon: Icons.email_outlined,
-        ),
-        const SizedBox(height: 2),
-        MyTextfield(
-          _passwordController,
-          true,
-          'Password',
-          icon: Icons.lock_outline,
-        ),
-      ],
-    );
-  }
-
-  Widget _buildDropdownSection(StateSetter setState) {
-    return SizedBox(
-      height: 95,
-      child: MyDropdown(
-        selectedValue: _selectedCategory,
-        items: _categoryList,
-        onChanged: (String? selectedValue) {
-          setState(() {
-            _selectedCategory = selectedValue;
-          });
-        },
-        hint: 'Select Category',
-      ),
-    );
-  }
-
-  Widget _buildActionButtons() {
-    return Container(
-      margin: EdgeInsets.symmetric(horizontal: 20),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          MyButton(
-            onBtnPress: () => saveCredential(
-              _uniqeNameController.text,
-              _emailController.text,
-              _passwordController.text,
-              _selectedCategory!,
-            ),
-            text: 'Save',
-            color: Colors.blue.shade100,
-            textColor: Colors.blue.shade800,
-            icon: Icons.save_rounded,
+  // Add back the missing methods
+  Future<void> deleteAllData() async {
+    bool confirm = await showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Confirm Delete'),
+        content: const Text('Delete ALL credentials and categories?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
           ),
           TextButton(
-            onPressed: () {
-              _uniqeNameController.clear();
-              _emailController.clear();
-              _passwordController.clear();
-              Navigator.pop(context);
-            },
-            child: Text(
-              "Cancel",
-              style: TextStyle(
-                color: Colors.grey.shade600,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Delete All'),
           ),
         ],
       ),
     );
+
+    if (confirm == true && mounted) {
+      await storage.deleteAll();
+      setState(() {
+        _categoryList = ["Personal", "Work"]; // Reset to default
+      });
+      final SharedPreferences pref = await SharedPreferences.getInstance();
+      await pref.setStringList('category', _categoryList);
+    }
   }
 
+// Update the build method
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: MyAppBar(
         title: "Key Master",
-        myIcon: const Icon(
-          Icons.settings,
-          color: Colors.black87,
+        myIcon: const Icon(Icons.settings, color: Colors.black87),
+        onTap: () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const SettingsPage()),
         ),
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => SettingsPage()),
-          );
-        },
       ),
       body: Column(
-        mainAxisSize: MainAxisSize.min,
         children: [
-          GestureDetector(
-            onTap: addCategoryBtn,
-            child: Text(
-              "Add category",
-              style: TextStyle(fontSize: 20),
-            ),
-          ),
-          MyButton(
-            onBtnPress: deleteAllData,
-            text: 'delete data',
-            icon: Icons.delete_rounded,
-          ),
-          Expanded(
-            child: ReorderableListView(
-              onReorder: (oldIndex, newIndex) {
-                setState(() {
-                  if (newIndex > oldIndex) {
-                    newIndex--; // Adjust for list shifting
-                  }
-                  final item = _categoryList.removeAt(oldIndex);
-                  _categoryList.insert(newIndex, item);
-                });
-              },
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                for (int index = 0; index < _categoryList.length; index++)
-                  MyCard(
-                    key: ValueKey(
-                        _categoryList[index]), // Required for reorderable list
-                    username: _categoryList[index],
-                    onTap: () => onCardTap(context, _categoryList[index]),
-                    onIconTap: () =>
-                        onDeleteIconTap(context, _categoryList[index], index),
-                    dragHandle: ReorderableDragStartListener(
-                      index: index,
-                      child: Icon(Icons.drag_handle, color: Colors.white),
-                    ),
-                  ),
+                TextButton.icon(
+                  icon: const Icon(Icons.add_box_outlined),
+                  label: const Text("Add Category"),
+                  onPressed: addCategoryBtn,
+                ),
+                MyButton(
+                  onBtnPress: deleteAllData,
+                  text: 'Clear All',
+                  icon: Icons.delete_forever,
+                  color: Colors.red.shade100,
+                  textColor: Colors.red.shade800,
+                ),
               ],
             ),
+          ),
+          Expanded(
+            child: _categoryList.isEmpty
+                ? Center(
+                    child: Text(
+                      'No categories found. Add a new category!',
+                      style: TextStyle(color: Colors.grey.shade600),
+                    ),
+                  )
+                : ReorderableListView(
+                    onReorder: (oldIndex, newIndex) {
+                      if (newIndex > oldIndex) newIndex--;
+                      setState(() {
+                        final item = _categoryList.removeAt(oldIndex);
+                        _categoryList.insert(newIndex, item);
+                      });
+                    },
+                    children: [
+                      for (int index = 0; index < _categoryList.length; index++)
+                        MyCard(
+                          key: ValueKey(_categoryList[index]),
+                          username: _categoryList[index],
+                          onTap: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  CredentialsPage(_categoryList[index]),
+                            ),
+                          ),
+                          onIconTap: () => onDeleteIconTap(
+                              context, _categoryList[index], index),
+                          dragHandle: ReorderableDragStartListener(
+                            index: index,
+                            child: const Icon(Icons.drag_handle,
+                                color: Colors.white),
+                          ),
+                        ),
+                    ],
+                  ),
           ),
         ],
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: showDialogBox,
-        backgroundColor: Color(0xFF90CAF9),
+        backgroundColor: const Color(0xFF90CAF9),
         foregroundColor: Colors.grey.shade800,
         elevation: 2,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
-          side: BorderSide(
-            color: Color(0xFF90CAF9),
-            width: 1.5,
-          ),
+          side: const BorderSide(color: Color(0xFF90CAF9), width: 1.5),
         ),
-        child: Icon(
-          Icons.add_rounded,
-          size: 28,
-        ),
+        child: const Icon(Icons.add_rounded, size: 28),
       ),
     );
   }
