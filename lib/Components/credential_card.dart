@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 
 class CredentialCard extends StatelessWidget {
   final String username;
+  final String email;
   final GestureTapCallback? onTap;
-  final Function? onIconTap;
+  final VoidCallback? onIconTap;
   const CredentialCard({
     required this.username,
     required this.onTap,
-    this.onIconTap,
+    required this.onIconTap,
+    required this.email,
     super.key,
   });
 
@@ -40,14 +42,10 @@ class CredentialCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      "user@example.com",
+                      email,
                       style: Theme.of(context).textTheme.bodyMedium,
                     ),
                     const SizedBox(height: 4),
-                    Text(
-                      "Last modified: 2h ago",
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
                   ],
                 ),
               ),
@@ -57,24 +55,11 @@ class CredentialCard extends StatelessWidget {
                 children: [
                   IconButton(
                     icon: Icon(
-                      Icons.star,
-                      color: Theme.of(context).colorScheme.secondary,
-                      size: 20,
-                    ),
-                    onPressed: () {
-                      // If you need to use onIconTap, you can wrap this
-                      // call accordingly, for example:
-                      // if (onIconTap != null) onIconTap!();
-                    },
-                    splashRadius: 20,
-                  ),
-                  IconButton(
-                    icon: Icon(
                       Icons.delete_outline,
                       color: Theme.of(context).iconTheme.color,
                       size: 20,
                     ),
-                    onPressed: () {},
+                    onPressed: onIconTap,
                     splashRadius: 20,
                   ),
                   IconButton(

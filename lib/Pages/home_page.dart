@@ -458,62 +458,74 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   }
 
   /// Builds the Name Section in Settings.
+
+  /// "Settings" Fragment: Displays settings content.
+  /// Builds the Name Section in Settings.
   Widget _buildNameSection() {
     if (_myName.isNotEmpty && !_isEditingName) {
-      // Display greeting with an option to edit.
-      return Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            "Hi, $_myName",
-            style: const TextStyle(fontSize: 18),
-          ),
-          TextButton(
-            onPressed: () {
-              setState(() {
-                _isEditingName = true;
-                _nameController.text = _myName;
-              });
-            },
-            child: const Text("Edit"),
-          )
-        ],
+      // Display greeting with an option to edit using a ListTile.
+      return ListTile(
+        contentPadding: EdgeInsets.zero,
+        leading: const Icon(Icons.person, color: Colors.deepPurple),
+        title: Text(
+          "Hi, $_myName",
+          style: Theme.of(context).textTheme.titleMedium,
+        ),
+        trailing: TextButton(
+          onPressed: () {
+            setState(() {
+              _isEditingName = true;
+              _nameController.text = _myName;
+            });
+          },
+          child: const Text("Edit", style: TextStyle(color: Colors.deepPurple)),
+        ),
       );
     } else {
-      // Show text field for entering the name.
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          TextField(
-            controller: _nameController,
-            decoration: const InputDecoration(
-              labelText: "My Name",
-              border: OutlineInputBorder(),
-            ),
+      // Show a Card-wrapped text field for entering the name.
+      return Card(
+        elevation: 2,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        margin: const EdgeInsets.symmetric(vertical: 8),
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            children: [
+              TextField(
+                controller: _nameController,
+                decoration: const InputDecoration(
+                  labelText: "My Name",
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 10),
+              MyButton(
+                onBtnPress: () async {
+                  final SharedPreferences pref =
+                      await SharedPreferences.getInstance();
+                  await pref.setString('myName', _nameController.text);
+                  setState(() {
+                    _myName = _nameController.text;
+                    _isEditingName = false;
+                  });
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Name saved successfully!')),
+                  );
+                },
+                text: 'Save Name',
+                icon: Icons.save,
+              ),
+            ],
           ),
-          const SizedBox(height: 10),
-          MyButton(
-            onBtnPress: () async {
-              final SharedPreferences pref =
-                  await SharedPreferences.getInstance();
-              await pref.setString('myName', _nameController.text);
-              setState(() {
-                _myName = _nameController.text;
-                _isEditingName = false;
-              });
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Name saved successfully!')),
-              );
-            },
-            text: 'Save Name',
-            icon: Icons.save,
-          ),
-        ],
+        ),
       );
     }
   }
 
-  /// "Settings" Fragment: Displays settings content.
+  /// "Settings" Fragment: Displays settings content with improved Material You styling.
+  /// "Settings" Fragment: Displays settings content with improved Material You styling.
   Widget _buildSettingsFragment() {
     return SingleChildScrollView(
       child: Padding(
@@ -521,24 +533,71 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              "User Settings",
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            // Header for User Settings.
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8.0),
+              child: Text(
+                "User Settings",
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
             ),
-            const SizedBox(height: 10),
-            _buildNameSection(),
-            const SizedBox(height: 20),
-            const Text(
-              "Data Management",
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            // Wrap the name section in a Card.
+            Card(
+              elevation: 2,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              margin: const EdgeInsets.only(bottom: 20),
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: _buildNameSection(),
+              ),
             ),
-            const SizedBox(height: 10),
-            // Here, the delete button is given a red color.
-            MyButton(
-              onBtnPress: deleteAllData,
-              text: 'Delete All Data',
-              icon: Icons.delete_forever,
-              color: Colors.red,
+            // Header for Data Management.
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8.0),
+              child: Text(
+                "Data Management",
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
+            ),
+            // Use a Card with a ListTile for the delete action, now with a confirmation dialog.
+            Card(
+              elevation: 2,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: ListTile(
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                leading: const Icon(Icons.delete_forever, color: Colors.red),
+                title: const Text('Delete All Data'),
+                onTap: () async {
+                  // Show a confirmation dialog before deleting all data.
+                  bool confirm = await showDialog(
+                    context: context,
+                    builder: (context) => AlertDialog(
+                      title: const Text('Confirm Deletion'),
+                      content: const Text(
+                          'Are you sure you want to delete all data? This action cannot be undone.'),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.of(context).pop(false),
+                          child: const Text('Cancel'),
+                        ),
+                        TextButton(
+                          onPressed: () => Navigator.of(context).pop(true),
+                          child: const Text('Delete',
+                              style: TextStyle(color: Colors.red)),
+                        ),
+                      ],
+                    ),
+                  );
+                  if (confirm == true) {
+                    deleteAllData();
+                  }
+                },
+              ),
             ),
           ],
         ),
@@ -594,52 +653,60 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
           },
         ),
         body: _buildBody(),
-        bottomNavigationBar: CircleNavBar(
-          activeIndex: _selectedTabIndex,
-          activeIcons: const [
-            Icon(Icons.add_box_outlined, color: Colors.deepPurple),
-            Icon(Icons.home, color: Colors.deepPurple),
-            Icon(Icons.settings, color: Colors.deepPurple),
-          ],
-          inactiveIcons: const [
-            Text("Add"),
-            Text("Home"),
-            Text("Settings"),
-          ],
-          activeLevelsStyle:
-              const TextStyle(fontSize: 14, color: Colors.deepPurple),
-          inactiveLevelsStyle:
-              const TextStyle(fontSize: 12, color: Colors.grey),
-          color: Colors.white,
-          circleColor: Colors.deepPurpleAccent.shade100,
-          circleGradient: LinearGradient(
-            colors: [
-              Colors.deepPurpleAccent.shade100,
-              Colors.deepPurpleAccent.shade200
-            ],
-          ),
-          circleShadowColor: Colors.grey,
-          cornerRadius: const BorderRadius.only(
-            topLeft: Radius.circular(8),
-            topRight: Radius.circular(8),
-            bottomRight: Radius.circular(24),
-            bottomLeft: Radius.circular(24),
-          ),
-          elevation: 10,
-          tabCurve: Curves.easeInOut,
-          iconCurve: Curves.bounceOut,
-          tabDurationMillSec: 500,
-          iconDurationMillSec: 300,
-          padding: const EdgeInsets.only(left: 16, right: 16, bottom: 20),
-          shadowColor: const Color.fromARGB(255, 188, 188, 188),
-          onTap: (index) {
-            setState(() {
-              _selectedTabIndex = index;
-              // Reset Add option if switching away from Add tab.
-              if (index != 0) {
-                _selectedAddOption = AddOption.none;
-              }
-            });
+        bottomNavigationBar: Builder(
+          builder: (context) {
+            return CircleNavBar(
+              // Set a smaller overall height for the bottom navigation bar.
+              height: 65,
+              // Set a smaller width for the active circle.
+              circleWidth: 55,
+              activeIndex: _selectedTabIndex,
+              activeIcons: const [
+                Icon(Icons.add_box_outlined, color: Colors.white),
+                Icon(Icons.home, color: Colors.white),
+                Icon(Icons.settings, color: Colors.white),
+              ],
+              inactiveIcons: const [
+                Text("Add"),
+                Text("Home"),
+                Text("Settings"),
+              ],
+              activeLevelsStyle:
+                  const TextStyle(fontSize: 14, color: Colors.deepPurple),
+              inactiveLevelsStyle:
+                  const TextStyle(fontSize: 12, color: Colors.grey),
+              color: Colors.white,
+              circleColor: Colors.deepPurpleAccent.shade100,
+              circleGradient: const LinearGradient(
+                colors: [
+                  Color.fromARGB(255, 41, 128, 185),
+                  Color.fromARGB(255, 109, 213, 250),
+                ],
+              ),
+              circleShadowColor: Colors.grey,
+              cornerRadius: const BorderRadius.only(
+                topLeft: Radius.circular(8),
+                topRight: Radius.circular(8),
+                bottomRight: Radius.circular(24),
+                bottomLeft: Radius.circular(24),
+              ),
+              elevation: 10,
+              tabCurve: Curves.easeInOut,
+              iconCurve: Curves.bounceOut,
+              tabDurationMillSec: 500,
+              iconDurationMillSec: 300,
+              padding: const EdgeInsets.only(left: 16, right: 16, bottom: 20),
+              shadowColor: const Color.fromARGB(255, 188, 188, 188),
+              onTap: (index) {
+                setState(() {
+                  _selectedTabIndex = index;
+                  // Reset Add option if switching away from Add tab.
+                  if (index != 0) {
+                    _selectedAddOption = AddOption.none;
+                  }
+                });
+              },
+            );
           },
         ),
       ),

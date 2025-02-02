@@ -22,21 +22,27 @@ class MyAppBar extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context) {
-    // If not on the home page, show the provided title.
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    // Use a background color that adapts based on Material You dynamic colors.
+    final backgroundColor = colorScheme.primaryContainer;
+    // Use a text color that contrasts with the primary container.
+    final textStyle = theme.textTheme.titleLarge?.copyWith(
+      color: colorScheme.onPrimaryContainer,
+      fontWeight: FontWeight.w600,
+    );
+
+    // If not on the home page, display the provided title.
     if (!isHomePage) {
       return AppBar(
-        backgroundColor: const Color(0xFF90CAF9),
-        elevation: 2,
+        backgroundColor: backgroundColor,
+        elevation: 0,
         centerTitle: true,
         toolbarHeight: preferredSize.height,
         title: Text(
           title,
-          style: TextStyle(
-            fontSize: 24,
-            fontWeight: FontWeight.w600,
-            color: Colors.grey.shade900,
-            letterSpacing: 0.5,
-          ),
+          style: textStyle,
         ),
         actions: myIcon != null
             ? [
@@ -46,24 +52,11 @@ class MyAppBar extends StatelessWidget implements PreferredSizeWidget {
                   onPressed: onTap,
                 ),
               ]
-            : [],
-        iconTheme: IconThemeData(
-          color: Colors.grey.shade900,
-          size: 25,
-        ),
-        actionsIconTheme: IconThemeData(
-          color: Colors.grey.shade900,
-          size: 25,
-        ),
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(
-            bottom: Radius.circular(10),
-          ),
-        ),
+            : null,
       );
     }
 
-    // On the home page, use FutureBuilder to fetch the name.
+    // On the home page, use FutureBuilder to fetch the user's name.
     return FutureBuilder<SharedPreferences>(
       future: SharedPreferences.getInstance(),
       builder: (context, snapshot) {
@@ -77,40 +70,12 @@ class MyAppBar extends StatelessWidget implements PreferredSizeWidget {
           }
         }
         return AppBar(
-          backgroundColor: const Color(0xFF90CAF9),
-          elevation: 2,
-          centerTitle: true,
+          backgroundColor: backgroundColor,
+          elevation: 0,
           toolbarHeight: preferredSize.height,
           title: Text(
             displayTitle,
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.w600,
-              color: Colors.grey.shade900,
-              letterSpacing: 0.5,
-            ),
-          ),
-          actions: myIcon != null
-              ? [
-                  IconButton(
-                    icon: myIcon!,
-                    tooltip: 'Settings',
-                    onPressed: onTap,
-                  ),
-                ]
-              : [],
-          iconTheme: IconThemeData(
-            color: Colors.grey.shade900,
-            size: 25,
-          ),
-          actionsIconTheme: IconThemeData(
-            color: Colors.grey.shade900,
-            size: 25,
-          ),
-          shape: const RoundedRectangleBorder(
-            borderRadius: BorderRadius.vertical(
-              bottom: Radius.circular(10),
-            ),
+            style: textStyle,
           ),
         );
       },
