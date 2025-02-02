@@ -12,18 +12,23 @@ class MyTextfield extends StatelessWidget {
   final TextInputAction? textInputAction;
   final IconData? icon;
 
-  const MyTextfield(this.controller, this.obscureText, this.hint,
-      {super.key,
-      this.helperText,
-      this.errorText,
-      this.onChanged,
-      this.autofocus = false,
-      this.keyboardType,
-      this.textInputAction,
-      this.icon});
+  const MyTextfield(
+    this.controller,
+    this.obscureText,
+    this.hint, {
+    super.key,
+    this.helperText,
+    this.errorText,
+    this.onChanged,
+    this.autofocus = false,
+    this.keyboardType,
+    this.textInputAction,
+    this.icon,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: TextField(
@@ -33,49 +38,49 @@ class MyTextfield extends StatelessWidget {
         keyboardType: keyboardType,
         textInputAction: textInputAction,
         onChanged: onChanged,
-        cursorColor: Colors.blue.shade600,
-        style: TextStyle(
-          fontSize: 14,
-          color: Colors.grey.shade800,
-          fontWeight: FontWeight.w500,
-        ),
+        cursorColor: theme.colorScheme.primary,
+        style: theme.textTheme.bodyMedium,
         decoration: InputDecoration(
           prefixIcon:
-              icon != null ? Icon(icon, color: Colors.grey.shade500) : null,
+              icon != null ? Icon(icon, color: theme.iconTheme.color) : null,
           hintText: hint,
           filled: true,
-          fillColor: Colors.white.withOpacity(0.9),
+          fillColor: theme.inputDecorationTheme.fillColor ?? Colors.transparent,
           contentPadding:
               const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(color: Colors.grey.shade300, width: 1.0),
           ),
+          // Let the theme handle enabled and focused borders if provided.
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(color: Colors.grey.shade300, width: 1.0),
+            borderSide: BorderSide(
+              color: theme.dividerColor,
+              width: 1.0,
+            ),
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(color: Colors.blue.shade600, width: 1.5),
+            borderSide: BorderSide(
+              color: theme.colorScheme.primary,
+              width: 1.5,
+            ),
           ),
           errorBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(color: Colors.red.shade400, width: 1.5),
+            borderSide: BorderSide(
+              color: theme.colorScheme.error,
+              width: 1.5,
+            ),
           ),
-          hintStyle: TextStyle(
-            color: Colors.grey.shade500,
-            fontSize: 14,
+          hintStyle: theme.textTheme.bodyMedium?.copyWith(
+            color: theme.hintColor,
           ),
           helperText: helperText,
-          helperStyle: TextStyle(
-            color: Colors.grey.shade500,
-            fontSize: 12,
-          ),
+          helperStyle: theme.textTheme.bodySmall,
           errorText: errorText,
-          errorStyle: TextStyle(
-            color: Colors.red.shade400,
-            fontSize: 12,
+          errorStyle: theme.textTheme.bodySmall?.copyWith(
+            color: theme.colorScheme.error,
           ),
           floatingLabelBehavior: FloatingLabelBehavior.never,
         ),

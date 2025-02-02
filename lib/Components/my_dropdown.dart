@@ -26,70 +26,72 @@ class MyDropdown extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     return Padding(
       padding: padding!,
       child: DropdownButtonFormField<String>(
         value: selectedValue,
         decoration: InputDecoration(
           filled: true,
-          fillColor: Colors.white.withOpacity(0.9),
+          fillColor: colorScheme.surface,
           contentPadding:
               const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(16),
             borderSide: BorderSide(
-              color: Colors.grey.shade300,
+              color: colorScheme.outline,
               width: 1.0,
             ),
           ),
           enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(16),
             borderSide: BorderSide(
-              color: Colors.grey.shade300,
+              color: colorScheme.outline,
               width: 1.0,
             ),
           ),
           focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(16),
             borderSide: BorderSide(
-              color: Colors.blue.shade600,
+              color: colorScheme.primary,
               width: 1.5,
             ),
           ),
           errorBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(16),
             borderSide: BorderSide(
-              color: Colors.red.shade400,
+              color: colorScheme.error,
               width: 1.5,
             ),
           ),
           labelText: label,
           hintText: hint,
           errorText: errorText,
-          labelStyle: TextStyle(
-            color: Colors.grey.shade600,
+          labelStyle: theme.textTheme.bodyMedium?.copyWith(
+            color: colorScheme.onSurfaceVariant,
             fontSize: 14,
           ),
-          errorStyle: TextStyle(
-            color: Colors.red.shade400,
+          errorStyle: theme.textTheme.bodySmall?.copyWith(
+            color: colorScheme.error,
             fontSize: 12,
           ),
         ),
-        dropdownColor: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        dropdownColor: colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
         icon: Icon(
           Icons.expand_more,
-          color: Colors.grey.shade500,
+          color: colorScheme.onSurfaceVariant,
           size: 20,
         ),
         elevation: 2,
         menuMaxHeight: 300,
         isDense: isDense,
         isExpanded: isExpanded,
-        style: TextStyle(
-          fontSize: 14,
-          color: Colors.grey.shade800,
+        style: theme.textTheme.bodyMedium?.copyWith(
+          color: colorScheme.onSurface,
           fontWeight: FontWeight.w500,
+          fontSize: 14,
         ),
         items: items?.map((String item) {
           return DropdownMenuItem<String>(
@@ -98,8 +100,8 @@ class MyDropdown extends StatelessWidget {
               padding: const EdgeInsets.symmetric(vertical: 8),
               child: Text(
                 item,
-                style: TextStyle(
-                  color: Colors.grey.shade800,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: colorScheme.onSurface,
                   fontSize: 14,
                 ),
               ),
@@ -111,10 +113,10 @@ class MyDropdown extends StatelessWidget {
           return items?.map<Widget>((String item) {
                 return Text(
                   item,
-                  style: TextStyle(
-                    color: Colors.grey.shade800,
-                    fontSize: 14,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: colorScheme.onSurface,
                     fontWeight: FontWeight.w600,
+                    fontSize: 14,
                   ),
                 );
               }).toList() ??

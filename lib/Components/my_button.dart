@@ -20,25 +20,21 @@ class MyButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return ElevatedButton.icon(
       onPressed: onBtnPress,
-      style: ButtonStyle(
-        backgroundColor: WidgetStateProperty.all(color),
-        padding: WidgetStateProperty.all(
-          const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+      style: ElevatedButton.styleFrom(
+        backgroundColor: color,
+        foregroundColor: textColor,
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
         ),
-        shape: WidgetStateProperty.all(
-          RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
-          ),
-        ),
-        foregroundColor: WidgetStateProperty.all(Colors.blueGrey.shade800),
+        elevation: 0, // Material You typically favors a flatter look
       ),
-      icon: Icon(icon, size: 20),
+      icon: Icon(icon, size: 24),
       label: Text(
         text,
-        style: TextStyle(
-          fontSize: 14,
-          fontWeight: FontWeight.w500,
-          color: textColor,
+        style: const TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.w600,
         ),
       ),
     );

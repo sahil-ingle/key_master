@@ -5,6 +5,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:key_master/Components/credential_card.dart';
 import 'package:key_master/Components/my_app_bar.dart';
 import 'package:local_auth/local_auth.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class CredentialsPage extends StatefulWidget {
   final String title;
@@ -16,11 +17,14 @@ class CredentialsPage extends StatefulWidget {
 
 class _CredentialsPageState extends State<CredentialsPage> {
   final storage = FlutterSecureStorage();
-  // ignore: unused_field
   List<String> _usernames = [];
   Map<String, String>? _allCredential;
   final LocalAuthentication _localAuth = LocalAuthentication();
   bool _isAuthenticating = false;
+  String _searchQuery = '';
+
+  // Key to save the order for this category
+  String get _orderKey => 'order_${widget.title}';
 
   @override
   void initState() {
@@ -86,7 +90,7 @@ class _CredentialsPageState extends State<CredentialsPage> {
           borderRadius: BorderRadius.circular(16),
         ),
         child: Container(
-          constraints: BoxConstraints(maxWidth: 400),
+          constraints: const BoxConstraints(maxWidth: 400),
           padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
             color: Colors.white,
@@ -173,6 +177,7 @@ class _CredentialsPageState extends State<CredentialsPage> {
     );
   }
 
+  // Modified getUserNameList to load and apply saved ordering.
   void getUserNameList(String categoryName) async {
     try {
       Map<String, String> allData = await storage.readAll();
@@ -189,35 +194,116 @@ class _CredentialsPageState extends State<CredentialsPage> {
         }
       }
 
+      // Retrieve saved order from SharedPreferences (if it exists)
+      final prefs = await SharedPreferences.getInstance();
+      List<String>? savedOrder = prefs.getStringList(_orderKey);
+
+      if (savedOrder != null) {
+        // Build a new list by preserving the saved order.
+        List<String> orderedUsernames = [];
+        for (String username in savedOrder) {
+          if (usernames.contains(username)) {
+            orderedUsernames.add(username);
+          }
+        }
+        // Append any usernames not in the saved order (new items)
+        for (String username in usernames) {
+          if (!orderedUsernames.contains(username)) {
+            orderedUsernames.add(username);
+          }
+        }
+        usernames = orderedUsernames;
+      }
+
       setState(() {
         _usernames = usernames;
       });
     } catch (e) {
-      // Handle errors (e.g., log or show a message)
       print('Error loading usernames: $e');
     }
+  }
+
+  List<String> get _filteredUsernames {
+    if (_searchQuery.isEmpty) return _usernames;
+    return _usernames
+        .where((username) =>
+            username.toLowerCase().contains(_searchQuery.toLowerCase()))
+        .toList();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: MyAppBar(title: widget.title),
-      body: _isAuthenticating
-          ? const Center(child: CircularProgressIndicator())
-          : ListView.builder(
-              itemCount: _usernames.length,
-              itemBuilder: (context, index) {
-                return CredentialCard(
-                  username: _usernames[index],
-                  onTap: () {
-                    setState(() => _isAuthenticating = true);
-                    onTap(context, _usernames[index]);
-                    setState(() => _isAuthenticating = false);
-                  },
-                  onIconTap: () {},
-                );
+      body: Column(
+        children: [
+          // Material themed search bar
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: TextField(
+              onChanged: (value) {
+                setState(() {
+                  _searchQuery = value;
+                });
               },
+              decoration: InputDecoration(
+                hintText: 'Search credentials...',
+                prefixIcon: const Icon(Icons.search),
+                filled: true,
+                fillColor: Colors.grey.shade100,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: BorderSide.none,
+                ),
+              ),
             ),
+          ),
+          Expanded(
+            child: _searchQuery.isEmpty
+                ? ReorderableListView(
+                    onReorder: (int oldIndex, int newIndex) async {
+                      if (newIndex > oldIndex) newIndex--;
+                      setState(() {
+                        final item = _usernames.removeAt(oldIndex);
+                        _usernames.insert(newIndex, item);
+                      });
+                      // Save the new order in SharedPreferences so it persists.
+                      final prefs = await SharedPreferences.getInstance();
+                      await prefs.setStringList(_orderKey, _usernames);
+                    },
+                    children: [
+                      for (int index = 0; index < _usernames.length; index++)
+                        CredentialCard(
+                          key: ValueKey(_usernames[index]),
+                          username: _usernames[index],
+                          onTap: () {
+                            setState(() => _isAuthenticating = true);
+                            onTap(context, _usernames[index]);
+                            setState(() => _isAuthenticating = false);
+                          },
+                          onIconTap: () {},
+                        ),
+                    ],
+                  )
+                : ListView.builder(
+                    itemCount: _filteredUsernames.length,
+                    itemBuilder: (context, index) {
+                      final username = _filteredUsernames[index];
+                      return CredentialCard(
+                        key: ValueKey(username),
+                        username: username,
+                        onTap: () {
+                          onTap(context, username);
+                        },
+                        onIconTap: () {},
+                      );
+                    },
+                  ),
+          ),
+          if (_isAuthenticating)
+            const Center(child: CircularProgressIndicator()),
+        ],
+      ),
     );
   }
 }
