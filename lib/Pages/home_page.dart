@@ -10,6 +10,8 @@ import 'package:key_master/Components/my_textfield.dart';
 import 'package:key_master/Pages/credentials_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:circle_nav_bar/circle_nav_bar.dart';
+import 'dart:io';
+import 'package:file_picker/file_picker.dart';
 
 // Enum to track which Add option is expanded.
 enum AddOption { none, credential, category }
@@ -68,6 +70,121 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     _searchController.dispose();
     _nameController.dispose();
     super.dispose();
+  }
+
+  Future<void> exportAppData() async {
+    try {
+      // 1. Get credentials from secure storage.
+      final Map<String, String> credentialsData = await storage.readAll();
+      List<Map<String, dynamic>> credentials = [];
+      credentialsData.forEach((key, value) {
+        // Each value is stored as a JSON string.
+        credentials.add(jsonDecode(value));
+      });
+
+      // 2. Get categories and user name from SharedPreferences.
+      final SharedPreferences prefs = await SharedPreferences.getInstance();
+      List<String> categories =
+          prefs.getStringList('category') ?? ["Personal", "Work"];
+      String userName = prefs.getString('myName') ?? "";
+
+      // 3. Combine all data.
+      Map<String, dynamic> appData = {
+        "credentials": credentials,
+        "categories": categories,
+        "userName": userName,
+      };
+
+      // 4. Encode data as JSON.
+      String jsonData = jsonEncode(appData);
+
+      // 5. Let the user pick a directory.
+      String? selectedDirectory = await FilePicker.platform.getDirectoryPath();
+      if (selectedDirectory == null) {
+        // User cancelled the picker.
+        return;
+      }
+      String filePath = '$selectedDirectory/app_data_export.json';
+      File file = File(filePath);
+      await file.writeAsString(jsonData);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('App data exported to $filePath')),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error exporting app data: $e')),
+      );
+    }
+  }
+
+// Imports app data by letting the user pick a JSON file.
+// This method reads the file content and calls the importAppData function.
+  Future<void> importAppDataFromFile() async {
+    try {
+      FilePickerResult? result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['json'],
+      );
+      if (result != null && result.files.single.path != null) {
+        String filePath = result.files.single.path!;
+        File file = File(filePath);
+        String jsonData = await file.readAsString();
+        await importAppData(jsonData);
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error importing app data: $e')),
+      );
+    }
+  }
+
+// The existing importAppData method remains unchanged.
+  Future<void> importAppData(String jsonData) async {
+    try {
+      Map<String, dynamic> appData = jsonDecode(jsonData);
+
+      // 1. Import credentials.
+      if (appData.containsKey('credentials')) {
+        List<dynamic> credentials = appData['credentials'];
+        for (var cred in credentials) {
+          // Assuming each credential has a 'userName' as its unique key.
+          String uniqueName = cred['userName'];
+          await storage.write(key: uniqueName, value: jsonEncode(cred));
+        }
+      }
+
+      // 2. Import categories.
+      if (appData.containsKey('categories')) {
+        List<dynamic> categories = appData['categories'];
+        final SharedPreferences prefs = await SharedPreferences.getInstance();
+        List<String> categoryList = categories.cast<String>();
+        await prefs.setStringList('category', categoryList);
+        setState(() {
+          _categoryList = categoryList;
+          _filteredCategoryList = List.from(categoryList);
+        });
+      }
+
+      // 3. Import user name.
+      if (appData.containsKey('userName')) {
+        String importedName = appData['userName'];
+        final SharedPreferences prefs = await SharedPreferences.getInstance();
+        await prefs.setString('myName', importedName);
+        setState(() {
+          _myName = importedName;
+          _nameController.text = importedName;
+        });
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('App data imported successfully')),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error importing app data: $e')),
+      );
+    }
   }
 
   Future<void> loadData() async {
@@ -567,36 +684,52 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: ListTile(
-                contentPadding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                leading: const Icon(Icons.delete_forever, color: Colors.red),
-                title: const Text('Delete All Data'),
-                onTap: () async {
-                  // Show a confirmation dialog before deleting all data.
-                  bool confirm = await showDialog(
-                    context: context,
-                    builder: (context) => AlertDialog(
-                      title: const Text('Confirm Deletion'),
-                      content: const Text(
-                          'Are you sure you want to delete all data? This action cannot be undone.'),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.of(context).pop(false),
-                          child: const Text('Cancel'),
+              child: Column(
+                children: [
+                  ListTile(
+                    leading:
+                        const Icon(Icons.file_download, color: Colors.green),
+                    title: const Text('Export App Data'),
+                    onTap: exportAppData,
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.file_upload, color: Colors.blue),
+                    title: const Text('Import App Data'),
+                    onTap: importAppDataFromFile,
+                  ),
+                  ListTile(
+                    contentPadding:
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    leading:
+                        const Icon(Icons.delete_forever, color: Colors.red),
+                    title: const Text('Delete All Data'),
+                    onTap: () async {
+                      // Show a confirmation dialog before deleting all data.
+                      bool confirm = await showDialog(
+                        context: context,
+                        builder: (context) => AlertDialog(
+                          title: const Text('Confirm Deletion'),
+                          content: const Text(
+                              'Are you sure you want to delete all data? This action cannot be undone.'),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.of(context).pop(false),
+                              child: const Text('Cancel'),
+                            ),
+                            TextButton(
+                              onPressed: () => Navigator.of(context).pop(true),
+                              child: const Text('Delete',
+                                  style: TextStyle(color: Colors.red)),
+                            ),
+                          ],
                         ),
-                        TextButton(
-                          onPressed: () => Navigator.of(context).pop(true),
-                          child: const Text('Delete',
-                              style: TextStyle(color: Colors.red)),
-                        ),
-                      ],
-                    ),
-                  );
-                  if (confirm == true) {
-                    deleteAllData();
-                  }
-                },
+                      );
+                      if (confirm == true) {
+                        deleteAllData();
+                      }
+                    },
+                  ),
+                ],
               ),
             ),
           ],
