@@ -22,62 +22,67 @@ class MyAppBar extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
+    final scheme = Theme.of(context).colorScheme;
 
-    // Use a background color that adapts based on Material You dynamic colors.
-    final backgroundColor = colorScheme.primaryContainer;
-    // Use a text color that contrasts with the primary container.
-    final textStyle = theme.textTheme.titleLarge?.copyWith(
-      color: colorScheme.onPrimaryContainer,
-      fontWeight: FontWeight.w600,
-    );
-
-    // If not on the home page, display the provided title.
-    if (!isHomePage) {
+    Widget buildAppBarContent(String displayTitle) {
       return AppBar(
-        backgroundColor: backgroundColor,
+        // Make the bar itself transparent so our gradient shows through
+        backgroundColor: Colors.transparent,                      // :contentReference[oaicite:3]{index=3}
         elevation: 0,
         centerTitle: true,
         toolbarHeight: preferredSize.height,
-        title: Text(
-          title,
-          style: textStyle,
+        // Place gradient behind all AppBar content
+        flexibleSpace: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                scheme.secondary,                                // start with secondary :contentReference[oaicite:4]{index=4}
+                scheme.primary,                                  // end at primary :contentReference[oaicite:5]{index=5}
+              ],
+              begin: Alignment.centerLeft,                      // horizontal gradient :contentReference[oaicite:6]{index=6}
+              end: Alignment.centerRight,
+            ),
+          ),
         ),
-        actions: myIcon != null
-            ? [
+        title: Text(
+          displayTitle,
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                color: scheme.onPrimaryContainer,                // contrasts with container :contentReference[oaicite:7]{index=7}
+                fontWeight: FontWeight.w600,
+              ),
+        ),
+        actions: isHomePage || myIcon == null
+            ? null
+            : [
                 IconButton(
                   icon: myIcon!,
                   tooltip: 'Settings',
                   onPressed: onTap,
+                  color: scheme.onPrimaryContainer,              // icon color matches text :contentReference[oaicite:8]{index=8}
                 ),
-              ]
-            : null,
+              ],
       );
     }
 
-    // On the home page, use FutureBuilder to fetch the user's name.
+    if (!isHomePage) {
+      // Regular page: show provided title immediately
+      return buildAppBarContent(title);
+    }
+
+    // Home page: load name from SharedPreferences
     return FutureBuilder<SharedPreferences>(
       future: SharedPreferences.getInstance(),
       builder: (context, snapshot) {
-        String displayTitle = "Hello, welcome!";
+        String displayTitle = "Welcome!";
         if (snapshot.connectionState == ConnectionState.done &&
             snapshot.hasData) {
-          final prefs = snapshot.data;
-          final name = prefs!.getString('myName') ?? "";
+          final prefs = snapshot.data!;
+          final name = prefs.getString('myName') ?? "";
           if (name.isNotEmpty) {
-            displayTitle = "Hello, $name!";
+            displayTitle = "Hi, $name!";
           }
         }
-        return AppBar(
-          backgroundColor: backgroundColor,
-          elevation: 0,
-          toolbarHeight: preferredSize.height,
-          title: Text(
-            displayTitle,
-            style: textStyle,
-          ),
-        );
+        return buildAppBarContent(displayTitle);
       },
     );
   }

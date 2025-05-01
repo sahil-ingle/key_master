@@ -2,32 +2,35 @@ import 'package:flutter/material.dart';
 
 class MyButton extends StatelessWidget {
   final String text;
-  final Function()? onBtnPress;
+  final VoidCallback? onBtnPress;
   final IconData icon;
-  final Color color;
-  final Color textColor;
+  /// If null, defaults to the theme's ColorScheme.primary
+  final Color? color;
+  /// If null, defaults to the theme's ColorScheme.onPrimary
+  final Color? textColor;
 
   const MyButton({
     required this.onBtnPress,
     required this.text,
-    this.textColor = Colors.white,
-    super.key,
     required this.icon,
-    this.color = const Color(0xFF90CAF9),
+    this.color,
+    this.textColor,
+    super.key,
   });
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return ElevatedButton.icon(
       onPressed: onBtnPress,
       style: ElevatedButton.styleFrom(
-        backgroundColor: color,
-        foregroundColor: textColor,
+        backgroundColor: color ?? scheme.primary,
+        foregroundColor: textColor ?? scheme.onPrimary,
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
         ),
-        elevation: 0, // Material You typically favors a flatter look
+        elevation: 0, // flatter look
       ),
       icon: Icon(icon, size: 24),
       label: Text(

@@ -1,19 +1,20 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:key_master/Components/my_app_bar.dart';
-import 'package:key_master/Components/my_button.dart';
-import 'package:key_master/Components/my_card.dart';
-import 'package:key_master/Components/my_dropdown.dart';
-import 'package:key_master/Components/my_textfield.dart';
-import 'package:key_master/Pages/credentials_page.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:circle_nav_bar/circle_nav_bar.dart';
-import 'dart:io';
 import 'package:file_picker/file_picker.dart';
+import 'package:key_master/Components/my_back_button.dart';
+import 'package:key_master/Components/my_nav_bar.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
-// Enum to track which Add option is expanded.
+import '../Components/my_app_bar.dart';
+import '../Components/my_button.dart';
+import '../Components/my_card.dart';
+import '../Components/my_dropdown.dart';
+import '../Components/my_textfield.dart';
+import '../Pages/credentials_page.dart';
+
 enum AddOption { none, credential, category }
 
 class HomePage extends StatefulWidget {
@@ -24,32 +25,20 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
-  // Controllers for the Add Credentials form
   final TextEditingController _uniqueNameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  // Controller for the Add Category field (used in the "Add" tab)
   final TextEditingController _categoryController = TextEditingController();
-  // Controller for searching categories in the Home tab.
   final TextEditingController _searchController = TextEditingController();
-  // Controller for entering/editing the user's name in Settings.
   final TextEditingController _nameController = TextEditingController();
 
   List<String> _categoryList = [];
-  // List used for filtering based on search query.
   List<String> _filteredCategoryList = [];
   String? _selectedCategory;
 
-  // This variable tracks the current tab:
-  // 0 => Add Fragment, 1 => Home Fragment, 2 => Settings Fragment.
   int _selectedTabIndex = 1;
-
-  // This variable tracks which add option is expanded.
   AddOption _selectedAddOption = AddOption.none;
-
-  // Variable to store the user's name.
   String _myName = "";
-  // Flag to toggle editing mode for the name.
   bool _isEditingName = false;
 
   final FlutterSecureStorage storage = const FlutterSecureStorage();
@@ -74,52 +63,45 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
 
   Future<void> exportAppData() async {
     try {
-      // 1. Get credentials from secure storage.
       final Map<String, String> credentialsData = await storage.readAll();
       List<Map<String, dynamic>> credentials = [];
       credentialsData.forEach((key, value) {
-        // Each value is stored as a JSON string.
         credentials.add(jsonDecode(value));
       });
 
-      // 2. Get categories and user name from SharedPreferences.
       final SharedPreferences prefs = await SharedPreferences.getInstance();
-      List<String> categories =
-          prefs.getStringList('category') ?? ["Personal", "Work"];
+      List<String> categories = prefs.getStringList('category') ?? ["Personal", "Work"];
       String userName = prefs.getString('myName') ?? "";
 
-      // 3. Combine all data.
       Map<String, dynamic> appData = {
         "credentials": credentials,
         "categories": categories,
         "userName": userName,
       };
 
-      // 4. Encode data as JSON.
       String jsonData = jsonEncode(appData);
-
-      // 5. Let the user pick a directory.
       String? selectedDirectory = await FilePicker.platform.getDirectoryPath();
-      if (selectedDirectory == null) {
-        // User cancelled the picker.
-        return;
-      }
+      if (selectedDirectory == null) return;
+      
       String filePath = '$selectedDirectory/app_data_export.json';
-      File file = File(filePath);
-      await file.writeAsString(jsonData);
+      await File(filePath).writeAsString(jsonData);
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('App data exported to $filePath')),
+        SnackBar(
+          content: Text('App data exported to $filePath'),
+          backgroundColor: Theme.of(context).colorScheme.surface,
+        ),
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error exporting app data: $e')),
+        SnackBar(
+          content: Text('Error exporting app data: $e'),
+          backgroundColor: Theme.of(context).colorScheme.error,
+        ),
       );
     }
   }
 
-// Imports app data by letting the user pick a JSON file.
-// This method reads the file content and calls the importAppData function.
   Future<void> importAppDataFromFile() async {
     try {
       FilePickerResult? result = await FilePicker.platform.pickFiles(
@@ -128,37 +110,33 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       );
       if (result != null && result.files.single.path != null) {
         String filePath = result.files.single.path!;
-        File file = File(filePath);
-        String jsonData = await file.readAsString();
+        String jsonData = await File(filePath).readAsString();
         await importAppData(jsonData);
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error importing app data: $e')),
+        SnackBar(
+          content: Text('Error importing app data: $e'),
+          backgroundColor: Theme.of(context).colorScheme.surface,
+        ),
       );
     }
   }
 
-// The existing importAppData method remains unchanged.
   Future<void> importAppData(String jsonData) async {
     try {
       Map<String, dynamic> appData = jsonDecode(jsonData);
 
-      // 1. Import credentials.
       if (appData.containsKey('credentials')) {
-        List<dynamic> credentials = appData['credentials'];
-        for (var cred in credentials) {
-          // Assuming each credential has a 'userName' as its unique key.
+        for (var cred in appData['credentials']) {
           String uniqueName = cred['userName'];
           await storage.write(key: uniqueName, value: jsonEncode(cred));
         }
       }
 
-      // 2. Import categories.
       if (appData.containsKey('categories')) {
-        List<dynamic> categories = appData['categories'];
+        List<String> categoryList = (appData['categories'] as List).cast<String>();
         final SharedPreferences prefs = await SharedPreferences.getInstance();
-        List<String> categoryList = categories.cast<String>();
         await prefs.setStringList('category', categoryList);
         setState(() {
           _categoryList = categoryList;
@@ -166,7 +144,6 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         });
       }
 
-      // 3. Import user name.
       if (appData.containsKey('userName')) {
         String importedName = appData['userName'];
         final SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -178,11 +155,17 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       }
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('App data imported successfully')),
+        SnackBar(
+          content: const Text('App data imported successfully'),
+          backgroundColor: Theme.of(context).colorScheme.surface,
+        ),
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error importing app data: $e')),
+        SnackBar(
+          content: Text('Error importing app data: $e'),
+          backgroundColor: Theme.of(context).colorScheme.error,
+        ),
       );
     }
   }
@@ -196,7 +179,10 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       });
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error loading categories: $e')),
+        SnackBar(
+          content: Text('Error loading categories: $e'),
+          backgroundColor: Theme.of(context).colorScheme.error,
+        ),
       );
     }
   }
@@ -205,7 +191,6 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     final SharedPreferences pref = await SharedPreferences.getInstance();
     setState(() {
       _myName = pref.getString('myName') ?? "";
-      // If name is empty, start in editing mode.
       _isEditingName = _myName.isEmpty;
       _nameController.text = _myName;
     });
@@ -214,85 +199,108 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   void _filterCategories(String query) {
     setState(() {
       _filteredCategoryList = _categoryList
-          .where((category) =>
-              category.toLowerCase().contains(query.toLowerCase()))
+          .where((category) => category.toLowerCase().contains(query.toLowerCase()))
           .toList();
     });
   }
 
-  Future<void> saveCredential(
-      String uniqueName, String email, String password, String category) async {
+  Future<void> saveCredential(String uniqueName, String email, String password, String category) async {
     if (_selectedCategory == null || _selectedCategory!.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select a category')),
+        SnackBar(
+          content: const Text('Please select a category'),
+          backgroundColor: Theme.of(context).colorScheme.error,
+        ),
       );
       return;
     }
+    
     final String? existingEntry = await storage.read(key: uniqueName);
     if (existingEntry != null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('This unique name already exists')),
+        SnackBar(
+          content: const Text('This unique name already exists'),
+          backgroundColor: Theme.of(context).colorScheme.error,
+        ),
       );
       return;
     }
+    
     final Map<String, String> userCredentials = {
       'userName': uniqueName,
       'email': email,
       'password': password,
       'category': category,
     };
+    
     await storage.write(key: uniqueName, value: jsonEncode(userCredentials));
     _uniqueNameController.clear();
     _emailController.clear();
     _passwordController.clear();
+    
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Credential saved successfully!')),
+      SnackBar(
+        content: const Text('Credential saved successfully!'),
+        backgroundColor: Theme.of(context).colorScheme.surface,
+      ),
     );
   }
 
   void addCategory() async {
     if (_categoryController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Category name cannot be empty')),
+        SnackBar(
+          content: const Text('Category name cannot be empty'),
+          backgroundColor: Theme.of(context).colorScheme.error,
+        ),
       );
       return;
     }
+    
     setState(() {
       _categoryList.add(_categoryController.text);
       _selectedCategory = _categoryController.text;
       _categoryController.clear();
       _filteredCategoryList = List.from(_categoryList);
     });
+    
     final SharedPreferences pref = await SharedPreferences.getInstance();
     await pref.setStringList('category', _categoryList);
+    
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Category saved successfully!')),
+      SnackBar(
+        content: const Text('Category saved successfully!'),
+        backgroundColor: Theme.of(context).colorScheme.surface,
+      ),
     );
   }
 
-  Future<void> onDeleteIconTap(
-      BuildContext context, String categoryName, int index) async {
+  Future<void> onDeleteIconTap(BuildContext context, String categoryName, int index) async {
     bool confirm = await showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Confirm Delete'),
-        content: Text('Delete all credentials in "$categoryName" category?'),
+        title: Text('Confirm Delete', style: TextStyle(color: Theme.of(context).colorScheme.onSurface)),
+        content: Text('Delete all credentials in "$categoryName" category?', style: TextStyle(color: Theme.of(context).colorScheme.onSurface)),
+        backgroundColor: Theme.of(context).colorScheme.surface,
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
+            child: Text('Cancel', style: TextStyle(color: Theme.of(context).colorScheme.primary)),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Delete'),
+            child: Text('Delete', style: TextStyle(color: Theme.of(context).colorScheme.error)),
           ),
         ],
       ),
     );
+    
     if (confirm != true) return;
+    
     try {
       final Map<String, String> allData = await storage.readAll();
       final List<String> keysToDelete = [];
+      
       for (String key in allData.keys) {
         final String? jsonString = allData[key];
         if (jsonString != null) {
@@ -302,45 +310,53 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
           }
         }
       }
+      
       for (String key in keysToDelete) {
         await storage.delete(key: key);
       }
+      
       setState(() {
         _categoryList.removeAt(index);
         _filteredCategoryList = List.from(_categoryList);
       });
+      
       final SharedPreferences pref = await SharedPreferences.getInstance();
       await pref.setStringList('category', _categoryList);
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error deleting category: $e')),
+        SnackBar(
+          content: Text('Error deleting category: $e'),
+          backgroundColor: Theme.of(context).colorScheme.error,
+        ),
       );
     }
   }
 
-  // Helper widget to build a card-like option for the Add tab.
   Widget _buildAddOptionCard(String title, IconData icon, VoidCallback onTap) {
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      color: Theme.of(context).colorScheme.secondary,
       child: ListTile(
-        leading: Icon(icon, color: Colors.deepPurple),
+        leading: Icon(icon, color: Theme.of(context).colorScheme.onSecondary),
         title: Text(
           title,
-          style: const TextStyle(fontWeight: FontWeight.w600),
+          style: TextStyle(
+            fontWeight: FontWeight.w600,
+            color: Theme.of(context).colorScheme.onSecondary,
+          ),
         ),
-        trailing: const Icon(Icons.arrow_forward, color: Colors.deepPurple),
+        trailing: Icon(Icons.arrow_forward, color: Theme.of(context).colorScheme.onSecondary),
         onTap: onTap,
       ),
     );
   }
 
-  /// "Add" Fragment now shows either two option cards or the expanded form,
-  /// based on which option is selected.
   Widget _buildAddFragment() {
     if (_selectedAddOption == AddOption.none) {
-      // Show two option cards
       return SingleChildScrollView(
+        
         child: Column(
+          
           children: [
             const SizedBox(height: 20),
             _buildAddOptionCard("Add Credential", Icons.vpn_key, () {
@@ -357,34 +373,18 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         ),
       );
     } else if (_selectedAddOption == AddOption.credential) {
-      // Expanded view for adding credentials.
       return SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.all(16.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              // Back button to return to option cards.
-              ListTile(
-                leading: const Icon(Icons.arrow_back, color: Colors.deepPurple),
-                title: const Text(
-                  "Back",
-                  style: TextStyle(
-                    fontWeight: FontWeight.w600,
-                    color: Colors.deepPurple,
-                  ),
-                ),
-                onTap: () {
-                  setState(() {
-                    _selectedAddOption = AddOption.none;
-                  });
-                },
-              ),
-              const SizedBox(height: 10),
-              const Text(
-                "Add Credentials",
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-              ),
+            children: [    
+                  MyBackButton(onBack: () {
+                    setState(() {
+                      _selectedAddOption = AddOption.none;
+                    });
+                  }),
+              
               const SizedBox(height: 20),
               MyTextfield(
                 _uniqueNameController,
@@ -425,7 +425,10 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                 onBtnPress: () {
                   if (_selectedCategory == null || _selectedCategory!.isEmpty) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Please select a category')),
+                      SnackBar(
+                        content: const Text('Please select a category'),
+                        backgroundColor: Theme.of(context).colorScheme.error,
+                      ),
                     );
                     return;
                   }
@@ -444,20 +447,18 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         ),
       );
     } else if (_selectedAddOption == AddOption.category) {
-      // Expanded view for adding a category.
       return SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.all(16.0),
           child: Column(
             children: [
-              // Back button to return to option cards.
               ListTile(
-                leading: const Icon(Icons.arrow_back, color: Colors.deepPurple),
-                title: const Text(
+                leading: Icon(Icons.arrow_back, color: Theme.of(context).colorScheme.primary),
+                title: Text(
                   "Back",
                   style: TextStyle(
                     fontWeight: FontWeight.w600,
-                    color: Colors.deepPurple,
+                    color: Theme.of(context).colorScheme.primary,
                   ),
                 ),
                 onTap: () {
@@ -467,9 +468,13 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                 },
               ),
               const SizedBox(height: 10),
-              const Text(
+              Text(
                 "Add Category",
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
               ),
               const SizedBox(height: 20),
               MyTextfield(_categoryController, false, 'Enter Category'),
@@ -487,7 +492,6 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     return Container();
   }
 
-  /// "Home" Fragment: Displays a search field and list of categories.
   Widget _buildHomeFragment() {
     return Column(
       children: [
@@ -498,11 +502,12 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
             onChanged: _filterCategories,
             decoration: InputDecoration(
               hintText: 'Search Categories',
-              prefixIcon: const Icon(Icons.search),
+              hintStyle: TextStyle(color: Theme.of(context).colorScheme.onSurface),
+              prefixIcon: Icon(Icons.search, color: Theme.of(context).colorScheme.onSurface),
               filled: true,
-              fillColor: Colors.grey[200],
+              fillColor: Theme.of(context).colorScheme.primary.withOpacity(0.4),
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(30),
+                borderRadius: BorderRadius.circular(16),
                 borderSide: BorderSide.none,
               ),
             ),
@@ -528,17 +533,14 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) =>
-                                  CredentialsPage(_categoryList[index]),
+                              builder: (context) => CredentialsPage(_categoryList[index]),
                             ),
                           );
                         },
-                        onIconTap: () => onDeleteIconTap(
-                            context, _categoryList[index], index),
+                        onIconTap: () => onDeleteIconTap(context, _categoryList[index], index),
                         dragHandle: ReorderableDragStartListener(
                           index: index,
-                          child: const Icon(Icons.drag_handle,
-                              color: Colors.white),
+                          child: Icon(Icons.drag_handle, color: Theme.of(context).colorScheme.onPrimary),
                         ),
                       ),
                   ],
@@ -553,19 +555,15 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) =>
-                                CredentialsPage(_filteredCategoryList[index]),
+                            builder: (context) => CredentialsPage(_filteredCategoryList[index]),
                           ),
                         );
                       },
                       onIconTap: () {
-                        // For filtered view, reordering is disabled.
-                        int actualIndex =
-                            _categoryList.indexOf(_filteredCategoryList[index]);
-                        onDeleteIconTap(
-                            context, _filteredCategoryList[index], actualIndex);
+                        int actualIndex = _categoryList.indexOf(_filteredCategoryList[index]);
+                        onDeleteIconTap(context, _filteredCategoryList[index], actualIndex);
                       },
-                      dragHandle: Container(), // No drag handle when filtered.
+                      dragHandle: Container(),
                     );
                   },
                 ),
@@ -574,19 +572,16 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     );
   }
 
-  /// Builds the Name Section in Settings.
-
-  /// "Settings" Fragment: Displays settings content.
-  /// Builds the Name Section in Settings.
   Widget _buildNameSection() {
     if (_myName.isNotEmpty && !_isEditingName) {
-      // Display greeting with an option to edit using a ListTile.
       return ListTile(
         contentPadding: EdgeInsets.zero,
-        leading: const Icon(Icons.person, color: Colors.deepPurple),
+        leading: Icon(Icons.person, color: Theme.of(context).colorScheme.primary),
         title: Text(
           "Hi, $_myName",
-          style: Theme.of(context).textTheme.titleMedium,
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
         ),
         trailing: TextButton(
           onPressed: () {
@@ -595,16 +590,19 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
               _nameController.text = _myName;
             });
           },
-          child: const Text("Edit", style: TextStyle(color: Colors.deepPurple)),
+          child: Text(
+            "Edit",
+            style: TextStyle(color: Theme.of(context).colorScheme.primary),
+          ),
         ),
       );
     } else {
-      // Show a Card-wrapped text field for entering the name.
       return Card(
         elevation: 2,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
         ),
+        color: Theme.of(context).colorScheme.surface,
         margin: const EdgeInsets.symmetric(vertical: 8),
         child: Padding(
           padding: const EdgeInsets.all(16.0),
@@ -612,23 +610,27 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
             children: [
               TextField(
                 controller: _nameController,
-                decoration: const InputDecoration(
+                style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
+                decoration: InputDecoration(
                   labelText: "My Name",
+                  labelStyle: TextStyle(color: Theme.of(context).colorScheme.onSurface),
                   border: OutlineInputBorder(),
                 ),
               ),
               const SizedBox(height: 10),
               MyButton(
                 onBtnPress: () async {
-                  final SharedPreferences pref =
-                      await SharedPreferences.getInstance();
+                  final SharedPreferences pref = await SharedPreferences.getInstance();
                   await pref.setString('myName', _nameController.text);
                   setState(() {
                     _myName = _nameController.text;
                     _isEditingName = false;
                   });
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Name saved successfully!')),
+                    SnackBar(
+                      content: const Text('Name saved successfully!'),
+                      backgroundColor: Theme.of(context).colorScheme.surface,
+                    ),
                   );
                 },
                 text: 'Save Name',
@@ -641,8 +643,6 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     }
   }
 
-  /// "Settings" Fragment: Displays settings content with improved Material You styling.
-  /// "Settings" Fragment: Displays settings content with improved Material You styling.
   Widget _buildSettingsFragment() {
     return SingleChildScrollView(
       child: Padding(
@@ -650,76 +650,94 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header for User Settings.
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 8.0),
               child: Text(
                 "User Settings",
-                style: Theme.of(context).textTheme.titleLarge,
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
               ),
             ),
-            // Wrap the name section in a Card.
             Card(
-              elevation: 2,
+              elevation: 5,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
+              color: Theme.of(context).colorScheme.surface,
               margin: const EdgeInsets.only(bottom: 20),
               child: Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: _buildNameSection(),
               ),
             ),
-            // Header for Data Management.
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 8.0),
               child: Text(
                 "Data Management",
-                style: Theme.of(context).textTheme.titleLarge,
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
               ),
             ),
-            // Use a Card with a ListTile for the delete action, now with a confirmation dialog.
             Card(
-              elevation: 2,
+              elevation: 5,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
+              color: Theme.of(context).colorScheme.surface,
               child: Column(
                 children: [
                   ListTile(
-                    leading:
-                        const Icon(Icons.file_download, color: Colors.green),
-                    title: const Text('Export App Data'),
+                    leading: Icon(Icons.file_download, color: Theme.of(context).colorScheme.primary),
+                    title: Text(
+                      'Export App Data',
+                      style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
+                    ),
                     onTap: exportAppData,
                   ),
                   ListTile(
-                    leading: const Icon(Icons.file_upload, color: Colors.blue),
-                    title: const Text('Import App Data'),
+                    leading: Icon(Icons.file_upload, color: Theme.of(context).colorScheme.primary),
+                    title: Text(
+                      'Import App Data',
+                      style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
+                    ),
                     onTap: importAppDataFromFile,
                   ),
                   ListTile(
-                    contentPadding:
-                        const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    leading:
-                        const Icon(Icons.delete_forever, color: Colors.red),
-                    title: const Text('Delete All Data'),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    leading: Icon(Icons.delete_forever, color: Theme.of(context).colorScheme.error),
+                    title: Text(
+                      'Delete All Data',
+                      style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
+                    ),
                     onTap: () async {
-                      // Show a confirmation dialog before deleting all data.
                       bool confirm = await showDialog(
                         context: context,
                         builder: (context) => AlertDialog(
-                          title: const Text('Confirm Deletion'),
-                          content: const Text(
-                              'Are you sure you want to delete all data? This action cannot be undone.'),
+                          title: Text(
+                            'Confirm Deletion',
+                            style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
+                          ),
+                          content: Text(
+                            'Are you sure you want to delete all data? This action cannot be undone.',
+                            style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
+                          ),
+                          backgroundColor: Theme.of(context).colorScheme.surface,
                           actions: [
                             TextButton(
                               onPressed: () => Navigator.of(context).pop(false),
-                              child: const Text('Cancel'),
+                              child: Text(
+                                'Cancel',
+                                style: TextStyle(color: Theme.of(context).colorScheme.primary),
+                              ),
                             ),
                             TextButton(
                               onPressed: () => Navigator.of(context).pop(true),
-                              child: const Text('Delete',
-                                  style: TextStyle(color: Colors.red)),
+                              child: Text(
+                                'Delete',
+                                style: TextStyle(color: Theme.of(context).colorScheme.error),
+                              ),
                             ),
                           ],
                         ),
@@ -743,7 +761,6 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     await pref.clear();
     await storage.deleteAll();
     setState(() {
-      // Reset categories to defaults.
       _categoryList = ["Personal", "Work"];
       _filteredCategoryList = List.from(_categoryList);
       _myName = "";
@@ -751,12 +768,14 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       _isEditingName = true;
     });
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('All data deleted successfully!')),
+      SnackBar(
+        content: const Text('All data deleted successfully!'),
+        backgroundColor: Theme.of(context).colorScheme.surface,
+      ),
     );
   }
 
-  /// Chooses which fragment to display based on the current tab.
-  Widget _buildBody() {
+  Widget _buildBody(int selectedTabIndex) {
     switch (_selectedTabIndex) {
       case 0:
         return _buildAddFragment();
@@ -775,73 +794,31 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       onWillPop: () async => false,
       child: Scaffold(
         appBar: MyAppBar(
-          // Update the title to include the user's name if set.
           title: _myName.isEmpty ? "Key Master" : "Key Master - $_myName",
           isHomePage: true,
-          myIcon: const Icon(Icons.settings, color: Colors.black87),
+          myIcon: Icon(Icons.settings, color: Theme.of(context).colorScheme.onSurface),
           onTap: () {
             setState(() {
               _selectedTabIndex = 2;
             });
           },
         ),
-        body: _buildBody(),
-        bottomNavigationBar: Builder(
-          builder: (context) {
-            return CircleNavBar(
-              // Set a smaller overall height for the bottom navigation bar.
-              height: 65,
-              // Set a smaller width for the active circle.
-              circleWidth: 55,
-              activeIndex: _selectedTabIndex,
-              activeIcons: const [
-                Icon(Icons.add_box_outlined, color: Colors.white),
-                Icon(Icons.home, color: Colors.white),
-                Icon(Icons.settings, color: Colors.white),
-              ],
-              inactiveIcons: const [
-                Text("Add"),
-                Text("Home"),
-                Text("Settings"),
-              ],
-              activeLevelsStyle:
-                  const TextStyle(fontSize: 14, color: Colors.deepPurple),
-              inactiveLevelsStyle:
-                  const TextStyle(fontSize: 12, color: Colors.grey),
-              color: Colors.white,
-              circleColor: Colors.deepPurpleAccent.shade100,
-              circleGradient: const LinearGradient(
-                colors: [
-                  Color.fromARGB(255, 41, 128, 185),
-                  Color.fromARGB(255, 109, 213, 250),
-                ],
-              ),
-              circleShadowColor: Colors.grey,
-              cornerRadius: const BorderRadius.only(
-                topLeft: Radius.circular(8),
-                topRight: Radius.circular(8),
-                bottomRight: Radius.circular(24),
-                bottomLeft: Radius.circular(24),
-              ),
-              elevation: 10,
-              tabCurve: Curves.easeInOut,
-              iconCurve: Curves.bounceOut,
-              tabDurationMillSec: 500,
-              iconDurationMillSec: 300,
-              padding: const EdgeInsets.only(left: 16, right: 16, bottom: 20),
-              shadowColor: const Color.fromARGB(255, 188, 188, 188),
-              onTap: (index) {
-                setState(() {
-                  _selectedTabIndex = index;
-                  // Reset Add option if switching away from Add tab.
-                  if (index != 0) {
-                    _selectedAddOption = AddOption.none;
-                  }
-                });
-              },
-            );
-          },
+        body: _buildBody(_selectedTabIndex),
+        bottomNavigationBar: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: MyNavBar(
+            selectedIndex: _selectedTabIndex,
+            badgeCounts: null,  // or [count1, count2, count3] if you want badges
+            onTabChange: (index) {
+              setState(() {
+                _selectedTabIndex = index;
+                if (index != 0) _selectedAddOption = AddOption.none;
+              });
+            },
+          ),
         ),
+      ),
       ),
     );
   }

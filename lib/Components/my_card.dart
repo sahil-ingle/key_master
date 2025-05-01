@@ -22,7 +22,7 @@ class MyCard extends StatelessWidget {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
       ),
-      color: Theme.of(context).colorScheme.surface,
+      color: Theme.of(context).colorScheme.secondary,
       // Material You emphasizes a dynamic color system
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
@@ -37,7 +37,7 @@ class MyCard extends StatelessWidget {
                   username,
                   style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                         fontWeight: FontWeight.w500,
-                        color: Theme.of(context).colorScheme.onSurface,
+                        color: Theme.of(context).colorScheme.onSecondary,
                         letterSpacing: -0.2,
                       ),
                   overflow: TextOverflow.ellipsis,
@@ -50,8 +50,7 @@ class MyCard extends StatelessWidget {
                       Icons.delete_outline,
                       color: Theme.of(context)
                           .colorScheme
-                          .onSurface
-                          .withOpacity(0.6),
+                          .onSecondary,
                       size: 20,
                     ),
                     onPressed: onIconTap,
@@ -68,8 +67,7 @@ class MyCard extends StatelessWidget {
                           Icons.drag_handle,
                           color: Theme.of(context)
                               .colorScheme
-                              .onSurface
-                              .withOpacity(0.5),
+                              .onSecondary,
                           size: 20,
                         ),
                         onPressed: null, // Disabled by default

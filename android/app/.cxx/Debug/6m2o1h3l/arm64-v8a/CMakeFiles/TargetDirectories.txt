@@ -1,0 +1,2 @@
+D:/VSCode Programs/key_master/android/app/.cxx/Debug/6m2o1h3l/arm64-v8a/CMakeFiles/edit_cache.dir
+D:/VSCode Programs/key_master/android/app/.cxx/Debug/6m2o1h3l/arm64-v8a/CMakeFiles/rebuild_cache.dir

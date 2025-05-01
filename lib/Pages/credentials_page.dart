@@ -126,7 +126,7 @@ class _CredentialsPageState extends State<CredentialsPage> {
                               style: TextStyle(
                                 fontSize: 20,
                                 fontWeight: FontWeight.w600,
-                                color: Theme.of(context).colorScheme.onSurface,
+                                color: Theme.of(context).colorScheme.primary,
                               ),
                             ),
                           ],
@@ -423,11 +423,12 @@ class _CredentialsPageState extends State<CredentialsPage> {
               onChanged: (value) => setState(() => _searchQuery = value),
               decoration: InputDecoration(
                 hintText: 'Search credentials...',
-                prefixIcon: const Icon(Icons.search),
+                hintStyle: TextStyle(color: Theme.of(context).colorScheme.onSurface),
+                prefixIcon: Icon(Icons.search, color: Theme.of(context).colorScheme.onSurface),
                 filled: true,
-                fillColor: Colors.grey.shade100,
+                fillColor: Theme.of(context).colorScheme.primary.withOpacity(0.4),
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(30),
+                  borderRadius: BorderRadius.circular(16),
                   borderSide: BorderSide.none,
                 ),
               ),

@@ -21,6 +21,7 @@ class CredentialCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
       ),
       elevation: 4,
+      color: Theme.of(context).colorScheme.secondary,
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
         onTap: onTap,
@@ -56,7 +57,7 @@ class CredentialCard extends StatelessWidget {
                   IconButton(
                     icon: Icon(
                       Icons.delete_outline,
-                      color: Theme.of(context).iconTheme.color,
+                      color: Theme.of(context).colorScheme.onSecondary,
                       size: 20,
                     ),
                     onPressed: onIconTap,
@@ -65,7 +66,7 @@ class CredentialCard extends StatelessWidget {
                   IconButton(
                     icon: Icon(
                       Icons.drag_handle,
-                      color: Theme.of(context).iconTheme.color,
+                      color: Theme.of(context).colorScheme.onSecondary,
                       size: 20,
                     ),
                     onPressed: () {},

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:key_master/Pages/home_page.dart';
 import 'package:key_master/Pages/lock_screen.dart';
+import 'package:key_master/Themes/theme.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -18,6 +19,8 @@ class MyApp extends StatelessWidget {
       routes: {
         '/home': (context) => const HomePage(),
       },
+      theme: lightMode,
+      darkTheme: darkMode,
     );
   }
 }

@@ -34,7 +34,7 @@ class MyDropdown extends StatelessWidget {
         value: selectedValue,
         decoration: InputDecoration(
           filled: true,
-          fillColor: colorScheme.surface,
+          fillColor: colorScheme.secondary,
           contentPadding:
               const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           border: OutlineInputBorder(
@@ -54,7 +54,7 @@ class MyDropdown extends StatelessWidget {
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(16),
             borderSide: BorderSide(
-              color: colorScheme.primary,
+              color: colorScheme.secondary,
               width: 1.5,
             ),
           ),
@@ -69,7 +69,7 @@ class MyDropdown extends StatelessWidget {
           hintText: hint,
           errorText: errorText,
           labelStyle: theme.textTheme.bodyMedium?.copyWith(
-            color: colorScheme.onSurfaceVariant,
+            color: colorScheme.onSecondary,
             fontSize: 14,
           ),
           errorStyle: theme.textTheme.bodySmall?.copyWith(
@@ -77,11 +77,11 @@ class MyDropdown extends StatelessWidget {
             fontSize: 12,
           ),
         ),
-        dropdownColor: colorScheme.surface,
+        dropdownColor: colorScheme.secondary,
         borderRadius: BorderRadius.circular(16),
         icon: Icon(
           Icons.expand_more,
-          color: colorScheme.onSurfaceVariant,
+          color: colorScheme.onSecondary,
           size: 20,
         ),
         elevation: 2,
@@ -89,7 +89,7 @@ class MyDropdown extends StatelessWidget {
         isDense: isDense,
         isExpanded: isExpanded,
         style: theme.textTheme.bodyMedium?.copyWith(
-          color: colorScheme.onSurface,
+          color: colorScheme.onSecondary,
           fontWeight: FontWeight.w500,
           fontSize: 14,
         ),
@@ -101,7 +101,7 @@ class MyDropdown extends StatelessWidget {
               child: Text(
                 item,
                 style: theme.textTheme.bodyMedium?.copyWith(
-                  color: colorScheme.onSurface,
+                  color: colorScheme.onSecondary,
                   fontSize: 14,
                 ),
               ),
@@ -114,7 +114,7 @@ class MyDropdown extends StatelessWidget {
                 return Text(
                   item,
                   style: theme.textTheme.bodyMedium?.copyWith(
-                    color: colorScheme.onSurface,
+                    color: colorScheme.secondary,
                     fontWeight: FontWeight.w600,
                     fontSize: 14,
                   ),

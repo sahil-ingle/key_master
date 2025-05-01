@@ -38,11 +38,11 @@ class MyTextfield extends StatelessWidget {
         keyboardType: keyboardType,
         textInputAction: textInputAction,
         onChanged: onChanged,
-        cursorColor: theme.colorScheme.primary,
+        cursorColor: theme.colorScheme.secondary,
         style: theme.textTheme.bodyMedium,
         decoration: InputDecoration(
           prefixIcon:
-              icon != null ? Icon(icon, color: theme.iconTheme.color) : null,
+              icon != null ? Icon(icon, color: theme.colorScheme.onSecondary) : null,
           hintText: hint,
           filled: true,
           fillColor: theme.inputDecorationTheme.fillColor ?? Colors.transparent,
@@ -62,7 +62,7 @@ class MyTextfield extends StatelessWidget {
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
             borderSide: BorderSide(
-              color: theme.colorScheme.primary,
+              color: theme.colorScheme.secondary,
               width: 1.5,
             ),
           ),
