@@ -105,8 +105,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   Future<void> importAppDataFromFile() async {
     try {
       FilePickerResult? result = await FilePicker.platform.pickFiles(
-        type: FileType.custom,
-        allowedExtensions: ['json'],
+
       );
       if (result != null && result.files.single.path != null) {
         String filePath = result.files.single.path!;
